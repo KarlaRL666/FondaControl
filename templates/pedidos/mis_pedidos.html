@@ -6,6 +6,277 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/pedidos.css') }}">
 {% endblock %}
 
+{% block head %}
+<style>
+    .mis-pedidos-view {
+        max-width: 1200px;
+        margin: 0 auto;
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .mis-pedidos-hero {
+        background: linear-gradient(135deg, #6B5344 0%, #8B7355 55%, #FF9800 100%);
+        color: #fff;
+        padding: 28px 32px;
+        border-radius: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-kicker {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.85);
+        margin-bottom: 4px;
+        font-weight: 700;
+    }
+
+    .section-title {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.2;
+        color: #fff;
+    }
+
+    .hero-subtitle {
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 0.95rem;
+    }
+
+    .hero-count-chip {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 10px;
+        padding: 10px 16px;
+        backdrop-filter: blur(4px);
+        min-width: auto;
+    }
+
+    .hero-count-chip span {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    .hero-count-chip small {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 700;
+    }
+
+    .pedidos-toolbar {
+        background: rgba(53, 57, 65, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 12px 16px;
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .form-label {
+        color: rgba(255, 255, 255, 0.92);
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .form-select, .pedidos-filter-select {
+        background: rgba(0, 0, 0, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--text-main);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .form-select:focus, .pedidos-filter-select:focus {
+        border-color: #FF9800;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.15);
+    }
+
+    .pedidos-wrapper {
+        background: rgba(53, 57, 65, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 24px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(10px);
+        animation: fadeInUp 0.5s ease-out 0.1s both;
+    }
+
+    .data-table {
+        background: transparent;
+        color: var(--text-main);
+    }
+
+    .data-table thead {
+        background: rgba(255, 152, 0, 0.12);
+    }
+
+    .data-table th {
+        color: #FFC107;
+        border-bottom: 1px solid rgba(255, 193, 7, 0.15);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        padding: 14px;
+        font-weight: 700;
+    }
+
+    .data-table td {
+        color: var(--text-main);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 14px;
+    }
+
+    .data-table tbody tr:hover {
+        background: rgba(255, 152, 0, 0.06);
+    }
+
+    .pedidos-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 14px;
+    }
+
+    .pedido-card {
+        background: rgba(0, 0, 0, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 14px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .pedido-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .pedido-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .pedido-card-id {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #FFC107;
+        margin: 0;
+    }
+
+    .pedido-card-total {
+        font-weight: 800;
+        color: #fff;
+        background: rgba(255, 152, 0, 0.18);
+        border: 1px solid rgba(255, 152, 0, 0.4);
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+
+    .pedido-card-meta {
+        display: grid;
+        gap: 3px;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.85);
+        margin-bottom: 10px;
+    }
+
+    .pedido-card-status {
+        margin-bottom: 10px;
+    }
+
+    .pedido-card-progress {
+        margin-bottom: 12px;
+    }
+
+    .pedido-card-progress small {
+        color: rgba(255, 255, 255, 0.72);
+    }
+
+    .pedido-card-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .badge {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .badge-pendiente {
+        background: rgba(255, 193, 7, 0.2);
+        color: #FFC107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .badge-en-proceso {
+        background: rgba(255, 152, 0, 0.2);
+        color: #FF9800;
+        border: 1px solid rgba(255, 152, 0, 0.3);
+    }
+
+    .badge-completado {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4CAF50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    .badge-cancelado {
+        background: rgba(244, 67, 54, 0.2);
+        color: #F44336;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+    }
+
+    .progress {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, #FF9800, #FFC107);
+    }
+
+    .text-gray-500 {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .italic {
+        font-style: italic;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .mis-pedidos-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="mis-pedidos-view">
 
@@ -21,94 +292,99 @@
     </div>
 </div>
 
+
 {% if pedidos %}
+
+<div class="mb-3" style="text-align:right">
+    <span class="fw-bold" style="font-size:1.2rem; color:#FF9800;">Total de pedidos: $
+        {{ pedidos|map(attribute='total')|sum|round(2) }}
+    </span>
+</div>
 
 <div class="pedidos-toolbar mb-3">
     <label for="estadoFiltroPedidos" class="form-label mb-0">Filtrar por estado:</label>
     <select id="estadoFiltroPedidos" class="form-select form-select-sm pedidos-filter-select">
+        <option value="pendiente" selected>Pendientes</option>
         <option value="todos">Todos</option>
-        <option value="pendiente">Pendiente</option>
-        <option value="solicitado">Solicitado</option>
-        <option value="en proceso">En Proceso</option>
-        <option value="producido">Producido</option>
-        <option value="completado">Completado</option>
-        <option value="cancelado">Cancelado</option>
+        <option value="pendiente de pago">Pendiente de pago</option>
+        <option value="en proceso">En proceso</option>
+        <option value="producido">Producidos</option>
+        <option value="completado">Completados</option>
+        <option value="pagado">Pagados</option>
+        <option value="cancelado">Cancelados</option>
     </select>
 </div>
 
 <div class="pedidos-wrapper">
-    <div class="table-responsive">
-    <table class="data-table pedidos-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Fecha Creación</th>
-                <th>Fecha</th>
-                <th>Método de pago</th>
-                <th>Responsable</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th></th>
-            </tr>
-        </thead>
+    <div class="pedidos-cards-grid" id="pedidosCardsGrid">
+        {% for p in pedidos %}
+        {% set estado_filtro = 'pendiente de pago' if ((p.estado or '')|lower == 'completado' and (p.estado_pago or '')|lower == 'pendiente de pago') else ((p.estado_mostrado or p.estado or '')|lower) %}
+        <article class="pedido-card-item" data-estado="{{ estado_filtro }}">
+            <div class="pedido-mobile-head">
+                <div>
+                    <p class="pedido-mobile-kicker mb-1">Pedido #{{ p.id }}</p>
+                    <h3 class="pedido-mobile-title mb-0">{{ p.estado_mostrado or p.estado }}</h3>
+                </div>
+                <span class="pedido-mobile-badge badge-linea">Total: ${{ "%.2f"|format(p.total) }}</span>
+            </div>
 
-        <tbody>
-            {% for p in pedidos %}
-            <tr data-estado="{{ (p.estado or '')|lower }}">
-                <td>#{{ p.id }}</td>
+            <div class="pedido-mobile-meta">
+                <div><strong>Fecha pedido:</strong> {{ p.fecha_str or '-' }}</div>
+                <div><strong>Fecha requerida:</strong> {{ p.fecha_requerida_str or '-' }}</div>
+                <div><strong>Pago:</strong> {{ p.estado_pago or 'Pendiente de pago' }}</div>
+            </div>
 
-                <td>
-                    {{ p.fecha.strftime('%d/%m/%Y') if p.fecha else '' }}
-                </td>
-              <td>
-    {% if p.estado == "Completado" %}
-        {{ p.fecha_entrega.strftime('%d/%m/%Y') if p.fecha_entrega else 'No definida' }}
-    {% elif p.estado == "En Proceso" %}
-        {{ p.fecha_estimada.strftime('%d/%m/%Y') if p.fecha_estimada else 'No definida' }}
-    {% else %}
-        <span class="text-gray-500 italic">No definida</span>
-    {% endif %}
-</td>
-
-                <td>{{ p.metodo_pago }}</td>
-                <td>{{ p.usuario_responsable }}</td>
-
-                <td>${{ "%.2f"|format(p.total) }}</td>
-
-                <td>
-                    {% if p.estado == "Pendiente" %}
-                        <span class="badge badge-pendiente">Pendiente</span>
-                        {% elif p.estado == "En Proceso" %}
-                        <span class="badge badge-en-proceso">En Proceso</span>
-                        {% elif p.estado == "Completado" %}
-                        <span class="badge badge-completado">Completado</span>
-                    {% elif p.estado == "Cancelado" %}
-                        <span class="badge badge-cancelado">Cancelado</span>
-                    {% else %}
-                        <span class="badge">{{ p.estado }}</span>
+            <div class="pedido-mobile-block">
+                <span class="pedido-mobile-label">Estado</span>
+                {% if p.estado_mostrado == "Pagado" %}
+                    <span class="badge badge-completado">Pagado</span>
+                {% elif p.estado == "Pendiente" %}
+                    <span class="badge badge-pendiente">Pendiente</span>
+                {% elif p.estado == "En Proceso" %}
+                    <span class="badge badge-en-proceso">En Proceso</span>
+                {% elif p.estado == "Completado" %}
+                    <span class="badge badge-completado">Completado</span>
+                    {% if p.calificado %}
+                    <span class="badge badge-completado ms-1">Calificado</span>
                     {% endif %}
-                </td>
+                {% elif p.estado == "Cancelado" %}
+                    <span class="badge badge-cancelado">Cancelado</span>
+                {% else %}
+                    <span class="badge">{{ p.estado }}</span>
+                {% endif %}
+            </div>
 
-                <td class="actions-col">
-                    <div class="pedido-actions-row">
-                    <button onclick=window.location.href='{{ url_for("pedidos.ver_detalles_pedido", id_pedido=p.id) }}'
-                                class="btn-view pedido-action-btn"
-                                title="Ver detalles">
-                            <i class="bi bi-eye text-lg"></i>
-                        </button>
-                        {% if p.estado in ["Pendiente", "Solicitado"] %}
-<button onclick="cancelarPedido('{{ p.id }}')"
-    class="btn-delete pedido-action-btn"
-    title="Cancelar pedido">
-    <i class="bi bi-trash text-lg"></i>
-</button>
-{% endif %}
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            <div class="pedido-mobile-block">
+                <span class="pedido-mobile-label">Progreso</span>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ p.progreso or 0 }}%;"></div>
+                </div>
+                <small>{{ p.progreso or 0 }}% de avance</small>
+            </div>
+
+            <div class="pedido-mobile-actions">
+                <button onclick=window.location.href='{{ url_for("pedidos.ver_detalles_pedido", id_pedido=p.id) }}'
+                        class="btn-view pedido-action-btn"
+                        title="Ver detalles">
+                    <i class="bi bi-eye text-lg"></i>
+                </button>
+                {% if p.estado == "Completado" and not p.calificado %}
+                <button onclick=window.location.href='{{ url_for("pedidos.ver_detalles_pedido", id_pedido=p.id) }}#calificar-servicio'
+                        class="btn-view pedido-action-btn"
+                        title="Calificar servicio">
+                    <i class="bi bi-star text-lg"></i>
+                </button>
+                {% endif %}
+                {% if p.estado in ["Pendiente", "Solicitado"] %}
+                <button onclick="cancelarPedido('{{ p.id }}')"
+                        class="btn-delete pedido-action-btn"
+                        title="Cancelar pedido">
+                    <i class="bi bi-trash text-lg"></i>
+                </button>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
     </div>
 </div>
 
@@ -149,26 +425,37 @@ function cancelarPedido(id) {
         })
         .then(res => res.json())
         .then(data => {
-            Swal.fire("¡Éxito!", data.message, "success");
-            location.reload();
+            if (data.success) {
+                Swal.fire("¡Éxito!", data.message, "success").then(() => location.reload());
+            } else {
+                Swal.fire("No se pudo cancelar", data.message || "Intenta de nuevo.", "error");
+            }
+        })
+        .catch(() => {
+            Swal.fire("Error", "Ocurrió un problema de conexión al cancelar.", "error");
         });
     }
     });
 }    
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.progress-bar[data-progreso]').forEach((bar) => {
+        const valor = Number(bar.dataset.progreso || 0);
+        bar.style.width = `${Math.max(0, Math.min(100, valor))}%`;
+    });
+
     const estadoFiltro = document.getElementById('estadoFiltroPedidos');
-    const filas = Array.from(document.querySelectorAll('.pedidos-table tbody tr'));
+    const cards = Array.from(document.querySelectorAll('.pedido-card-item'));
     const visiblePedidosCount = document.getElementById('visiblePedidosCount');
 
     function aplicarFiltro() {
         const estado = (estadoFiltro?.value || 'todos').toLowerCase();
         let visibles = 0;
 
-        filas.forEach((fila) => {
-            const estadoFila = (fila.dataset.estado || '').toLowerCase();
-            const mostrar = estado === 'todos' || estadoFila === estado;
-            fila.style.display = mostrar ? '' : 'none';
+        cards.forEach((card) => {
+            const estadoCard = (card.dataset.estado || '').toLowerCase();
+            const mostrar = estado === 'todos' || estadoCard === estado;
+            card.style.display = mostrar ? '' : 'none';
             if (mostrar) {
                 visibles += 1;
             }

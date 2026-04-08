@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Editar Producto{% endblock %}
+{% import '_macros.html' as macros %}
 
 {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+    <style>
+        .form-page .form-label { color: #000 !important; }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -21,26 +25,21 @@
                     <i class="bi bi-box-seam"></i> Información Básica
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-full">
-                        {{ form.nombre.label(class="form-label") }}
-                        {{ form.nombre(class="form-control", placeholder="Ej: Tacos al Pastor") }}
-                        {% for error in form.nombre.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.nombre, 'form-group-full', 'Ej: Tacos al Pastor', tooltip='Nombre comercial que verá el cliente') }}
+                    {{ macros.render_form_field(form.descripcion, 'form-group-full', 'Ej: Tortilla, pastor, piña y salsa', tooltip='Resumen breve de ingredientes o preparación') }}
+                    {{ macros.render_form_field(form.id_categoria_platillo, input_class='form-select', tooltip='Categoría para filtros y reportes') }}
 
                     <div class="form-group-full">
-                        {{ form.descripcion.label(class="form-label") }}
-                        {{ form.descripcion(class="form-control", rows="3", placeholder="Descripción o ingredientes principales") }}
-                        {% for error in form.descripcion.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
+                        <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+                            {{ form.usar_categoria_nueva(id='usar_categoria_nueva') }}
+                            Crear nueva categoría personalizada
+                        </label>
                     </div>
 
-                    <div class="form-group-half">
-                        {{ form.id_categoria_platillo.label(class="form-label") }}
-                        {{ form.id_categoria_platillo(class="form-control") }}
-                        {% for error in form.id_categoria_platillo.errors %}
+                    <div class="form-group-half" id="nueva_categoria_wrap" style="display:none;">
+                        {{ form.nombre_nueva_categoria.label(class="form-label") }}
+                        {{ form.nombre_nueva_categoria(class="form-control", placeholder="Ej: Especialidades de la casa") }}
+                        {% for error in form.nombre_nueva_categoria.errors %}
                             <small class="text-danger">{{ error }}</small>
                         {% endfor %}
                     </div>
@@ -52,29 +51,9 @@
                     <i class="bi bi-currency-dollar"></i> Precios y Stock
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.precio.label(class="form-label") }}
-                        {{ form.precio(class="form-control", step="0.01", min="0.01", placeholder="0.00") }}
-                        {% for error in form.precio.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.stock_actual.label(class="form-label") }}
-                        {{ form.stock_actual(class="form-control", step="0.1", min="0", placeholder="0") }}
-                        {% for error in form.stock_actual.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.stock_minimo.label(class="form-label") }}
-                        {{ form.stock_minimo(class="form-control", step="0.1", min="0", placeholder="0") }}
-                        {% for error in form.stock_minimo.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.precio, placeholder='Ej: 120.00', tooltip='Precio de venta por unidad') }}
+                    {{ macros.render_form_field(form.stock_actual, placeholder='Ej: 30', tooltip='Existencia disponible actualmente') }}
+                    {{ macros.render_form_field(form.stock_minimo, placeholder='Ej: 5', tooltip='Punto mínimo para generar alerta de producción') }}
                 </div>
             </div>
 
@@ -83,12 +62,8 @@
                     <i class="bi bi-image"></i> Imagen (Opcional)
                 </h3>
                 <div class="form-grid">
+                    {{ macros.render_form_field(form.imagen, 'form-group-full', tooltip='Sube una imagen para menú y catálogo') }}
                     <div class="form-group-full">
-                        {{ form.imagen.label(class="form-label") }}
-                        {{ form.imagen(class="form-control", accept=".jpg,.jpeg,.png,.webp") }}
-                        {% for error in form.imagen.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
                         <small class="text-gray-500">Sube una nueva imagen para reemplazar la actual (opcional).</small>
                         {% if producto.imagen %}
                             <div class="mt-3">
@@ -128,4 +103,25 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkCategoria = document.getElementById('usar_categoria_nueva');
+    const wrapCategoria = document.getElementById('nueva_categoria_wrap');
+    const selectCategoria = document.getElementById('id_categoria_platillo');
+
+    if (!checkCategoria || !wrapCategoria || !selectCategoria) return;
+
+    const toggleCategoria = () => {
+        const activa = checkCategoria.checked;
+        wrapCategoria.style.display = activa ? '' : 'none';
+        selectCategoria.disabled = activa;
+    };
+
+    checkCategoria.addEventListener('change', toggleCategoria);
+    toggleCategoria();
+});
+</script>
 {% endblock %}

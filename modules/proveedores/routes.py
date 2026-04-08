@@ -115,16 +115,16 @@ def editar():
         form.correo.data = proveedor.get('correo')
         form.direccion.data = proveedor.get('direccion')
         form.id_categoria_proveedor.data = proveedor.get('id_categoria_proveedor')
-    
-    if request.method == 'POST' and form.validate_on_submit():
-            exito, error = actualizar_proveedor(id_proveedor, request.form)
 
-            if exito:
-                current_app.logger.info(f"Proveedor actualizado: {form.nombre.data}")   
-                flash('Proveedor actualizado correctamente', 'success')
-                return redirect(url_for('proveedores.index'))
-            else:
-                current_app.logger.error(f"Error al actualizar proveedor: {str(error)}")
-                flash(error, 'danger')
+    if request.method == 'POST' and form.validate_on_submit():
+        exito, error = actualizar_proveedor(id_proveedor, form)
+
+        if exito:
+            current_app.logger.info(f"Proveedor actualizado: {form.nombre.data}")
+            flash('Proveedor actualizado correctamente', 'success')
+            return redirect(url_for('proveedores.index'))
+
+        current_app.logger.error(f"Error al actualizar proveedor: {str(error)}")
+        flash(error, 'danger')
     
     return render_template('proveedores/editar.html', form=form, proveedor=proveedor)

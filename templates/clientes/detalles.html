@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Detalles de Cliente{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+{% endblock %}
+{% block content %}
+<div class="users-detail-page">
+    <section class="users-detail-hero">
+        <div class="users-detail-identity">
+            <div class="users-detail-avatar">{{ (cliente.nombre[0] if cliente.nombre else 'C') | upper }}</div>
+            <div>
+                <span class="users-eyebrow">Ficha de cliente</span>
+                <h1>{{ cliente.nombre_completo }}</h1>
+                <p>@{{ cliente.username }}</p>
+            </div>
+        </div>
+
+        <div class="users-detail-actions">
+            <a href="{{ url_for('clientes.editar', id_cliente=cliente.id_cliente) }}" class="users-btn users-btn-secondary">
+                <i class="bi bi-pencil"></i>
+                Editar
+            </a>
+            <a href="{{ url_for('clientes.index') }}" class="users-btn users-btn-primary">
+                <i class="bi bi-arrow-left"></i>
+                Volver
+            </a>
+        </div>
+    </section>
+
+    <section class="users-detail-grid">
+        <article class="users-detail-card"><span class="users-detail-label"><i class="bi bi-circle-fill"></i> Estado</span><strong class="{{ 'is-active' if cliente.estado_bool else 'is-inactive' }}">{{ cliente.estado_display }}</strong></article>
+        <article class="users-detail-card"><span class="users-detail-label"><i class="bi bi-bag"></i> Pedidos</span><strong>{{ cliente.total_pedidos }}</strong></article>
+        <article class="users-detail-card"><span class="users-detail-label"><i class="bi bi-envelope"></i> Correo</span><strong>{{ cliente.correo or 'No disponible' }}</strong></article>
+        <article class="users-detail-card"><span class="users-detail-label"><i class="bi bi-telephone"></i> Teléfono</span><strong>{{ cliente.telefono or 'No disponible' }}</strong></article>
+        <article class="users-detail-card users-detail-card-wide"><span class="users-detail-label"><i class="bi bi-geo-alt"></i> Dirección</span><strong>{{ cliente.direccion or 'No disponible' }}</strong></article>
+    </section>
+
+    <section class="users-table-card mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="mb-0">Pedidos de este cliente</h4>
+            <span class="status-pill is-active"><span class="status-dot"></span>{{ cliente.pedidos|length }} registros</span>
+        </div>
+        <div class="table-responsive">
+            <table class="userTable data-table">
+                <thead>
+                    <tr>
+                        <th>No. Pedido</th>
+                        <th>Fecha</th>
+                        <th>Entrega</th>
+                        <th>Método pago</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if cliente.pedidos %}
+                        {% for pedido in cliente.pedidos %}
+                        <tr>
+                            <td>#{{ pedido.id_pedido }}</td>
+                            <td>{{ pedido.fecha.strftime('%d/%m/%Y') if pedido.fecha else 'N/D' }}</td>
+                            <td>{{ pedido.fecha_entrega.strftime('%d/%m/%Y') if pedido.fecha_entrega else 'Pendiente' }}</td>
+                            <td>{{ pedido.metodo_pago }}</td>
+                            <td>${{ '%.2f'|format(pedido.total) }}</td>
+                            <td>
+                                <span class="status-pill {{ 'is-active' if pedido.estado in ['Completado', 'Producido'] else 'is-inactive' }}">
+                                    <span class="status-dot"></span>{{ pedido.estado }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <i class="bi bi-bag"></i>
+                                    <p>Este cliente no tiene pedidos registrados</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="users-detail-actions mt-3">
+        <form method="POST" action="{{ url_for('clientes.eliminar', id_cliente=cliente.id_cliente) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="users-btn users-btn-danger">
+                <i class="bi bi-trash"></i>
+                Desactivar
+            </button>
+        </form>
+        {% if not cliente.estado_bool %}
+        <form method="POST" action="{{ url_for('clientes.activar', id_cliente=cliente.id_cliente) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="users-btn users-btn-secondary">
+                <i class="bi bi-check-circle"></i>
+                Activar
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

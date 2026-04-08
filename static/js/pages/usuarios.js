@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const csrfToken = "{{ csrf_token() }}";   // Jinja lo renderizará correctamente
-
     // ==================== ELEMENTOS ====================
     const searchInput = document.getElementById('searchInput');
     const roleFilter = document.getElementById('roleFilter');

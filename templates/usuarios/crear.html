@@ -1,11 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Crear Nuevo Usuario{% endblock %}
+{% import '_macros.html' as macros %}
 
 {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
 {% endblock %}
 
 {% block content %}
+<section class="users-form-page">
+    <header class="users-form-hero">
+        <div>
+            <p class="users-kicker">Administración</p>
+            <h1>Crear nuevo usuario</h1>
+            <p>Registra datos personales, contacto y credenciales de acceso.</p>
+        </div>
+    </header>
+
 <div class="form-page">
     <div class="form-container">
         <div class="form-title">
@@ -19,37 +29,10 @@
                     <i class="bi bi-person-fill"></i> Datos Personales
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.nombre.label(class="form-label") }}
-                        {{ form.nombre(class="form-control") }}
-                        {% for error in form.nombre.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.apellido_p.label(class="form-label") }}
-                        {{ form.apellido_p(class="form-control") }}
-                        {% for error in form.apellido_p.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.apellido_m.label(class="form-label") }}   <!-- Corregido: apellido_m en vez de repetir apellido_p -->
-                        {{ form.apellido_m(class="form-control") }}
-                        {% for error in form.apellido_m.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-full">
-                        {{ form.direccion.label(class="form-label") }}
-                        {{ form.direccion(class="form-control") }}
-                        {% for error in form.direccion.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.nombre, placeholder='Ej: Juan', tooltip='Escribe el nombre como aparece en documentos oficiales') }}
+                    {{ macros.render_form_field(form.apellido_p, placeholder='Ej: Pérez', tooltip='Apellido paterno del usuario') }}
+                    {{ macros.render_form_field(form.apellido_m, placeholder='Ej: López', tooltip='Apellido materno si aplica') }}
+                    {{ macros.render_form_field(form.direccion, 'form-group-full', 'Ej: Calle 5 #123, Col. Centro', tooltip='Dirección completa con calle, número y colonia') }}
                 </div>
             </div>
 
@@ -58,21 +41,8 @@
                     <i class="bi bi-telephone-fill"></i> Información de Contacto
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.telefono.label(class="form-label") }}
-                        {{ form.telefono(class="form-control") }}
-                        {% for error in form.telefono.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.correo.label(class="form-label") }}
-                        {{ form.correo(class="form-control") }}
-                        {% for error in form.correo.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.telefono, placeholder='Ej: 5512345678', tooltip='Ingresa 10 dígitos sin espacios ni guiones') }}
+                    {{ macros.render_form_field(form.correo, placeholder='Ej: usuario@correo.com', tooltip='Correo electrónico válido para acceso y notificaciones') }}
                 </div>
             </div>
 
@@ -81,38 +51,12 @@
                     <i class="bi bi-shield-lock-fill"></i> Datos de Usuario
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control") }}
-                        {% for error in form.username.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.rol.label(class="form-label") }}
-                        {{ form.rol(class="form-select") }}
-                        {% for error in form.rol.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.username, placeholder='Ej: juan.perez', tooltip='Nombre de usuario para iniciar sesión') }}
+                    {{ macros.render_form_field(form.rol, input_class='form-select', tooltip='Selecciona el rol que tendrá acceso en el sistema', help_text='El rol define permisos y pantallas disponibles.') }}
                 </div>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.contrasena.label(class="form-label") }}
-                        {{ form.contrasena(class="form-control") }}
-                        {% for error in form.contrasena.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.confirmar_contrasena.label(class="form-label") }}
-                        {{ form.confirmar_contrasena(class="form-control") }}
-                        {% for error in form.confirmar_contrasena.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.contrasena, placeholder='Ej: M1Clave@2026', tooltip='Debe incluir mayúscula, minúscula, número y símbolo') }}
+                    {{ macros.render_form_field(form.confirmar_contrasena, placeholder='Repite la contraseña', tooltip='Escribe exactamente la misma contraseña') }}
                 </div>
             </div>
 
@@ -124,6 +68,7 @@
         </form>
     </div>
 </div>
+</section>
 {% endblock %}
 {% block scripts %} 
 <script src="{{ url_for('static', filename='js/pages/usuarios.js') }}"></script>

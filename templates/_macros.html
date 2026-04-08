@@ -20,3 +20,49 @@
 
 </div>
 {% endmacro %}
+
+{% macro render_form_field(field, wrapper_class='form-group-half', placeholder='', input_class='form-control', tooltip='', help_text='') %}
+<div class="{{ wrapper_class }}">
+    {{ field.label(class='form-label') }}
+    {{ field(class=input_class, placeholder=placeholder if placeholder else field.label.text, title=tooltip if tooltip else None) }}
+    {% for error in field.errors %}
+        <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+    {% if help_text %}
+        <small class="text-gray-500" style="display:block;margin-top:4px;">{{ help_text }}</small>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_checkbox_field(field, label_text='') %}
+<label class="form-label" style="display:flex;align-items:center;gap:8px;">
+    {{ field() }}
+    {{ label_text if label_text else field.label.text }}
+</label>
+{% endmacro %}
+
+{% macro render_plain_input(name, label, value='', input_type='text', placeholder='', input_class='form-control', required=False, maxlength=None, autocomplete=None, wrapper_class='') %}
+<div class="{{ wrapper_class }}">
+    <label for="{{ name }}" class="form-label mb-1">{{ label }}</label>
+    <input
+        type="{{ input_type }}"
+        id="{{ name }}"
+        name="{{ name }}"
+        class="{{ input_class }}"
+        value="{{ value }}"
+        placeholder="{{ placeholder }}"
+        {% if required %}required{% endif %}
+        {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+        {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    >
+</div>
+{% endmacro %}
+
+{% macro render_action_form(action, csrf, title, btn_class='btn btn-sm', icon='bi bi-plus') %}
+<form method="POST" action="{{ action }}" class="d-inline" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="{{ btn_class }}" title="{{ title }}">
+        <i class="{{ icon }}"></i>
+    </button>
+</form>
+{% endmacro %}

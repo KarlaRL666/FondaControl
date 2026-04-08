@@ -1,64 +1,214 @@
 {% extends "base.html" %}
 {% block title %}Ingredientes{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/ingredientes.css') }}">
+{% endblock %}
+
 {% block content %}
-<h1>Gestión de Ingredientes</h1>
+<div class="ingredients-page">
+    {% set ns = namespace(total=ingredientes|length, activos=0, bajos=0) %}
+    {% for ingrediente in ingredientes %}
+        {% if ingrediente.estado %}
+            {% set ns.activos = ns.activos + 1 %}
+        {% endif %}
+        {% if ingrediente.stock_actual < ingrediente.stock_minimo %}
+            {% set ns.bajos = ns.bajos + 1 %}
+        {% endif %}
+    {% endfor %}
 
-<div class="toolbar">
-    <form method="GET" action="{{ url_for('ingredientes.index') }}" style="display:flex; gap:10px; width:100%;">
-        <input type="text" name="filtro" class="search" placeholder="Buscar por nombre o categoría..." value="{{ request.args.get('filtro', '') }}">
-        <button type="submit" class="btn-secondary">Buscar</button>
-    </form>
-    <button type="button" class="btn btn-primary" onclick="window.location.href='{{ url_for("ingredientes.crear") }}'">Nuevo ingrediente</button>
-    <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for("inventario.index") }}'">Volver al inventario</button>
-</div>
+    <section class="ingredients-hero">
+        <div>
+            <p class="ingredients-kicker">Inventario Inteligente</p>
+            <h1>Gestion de Ingredientes</h1>
+            <p class="ingredients-subtitle">Controla stock, costos y estado operativo de cada materia prima desde un solo panel.</p>
+        </div>
+        <div class="ingredients-hero-actions">
+            <a class="btn btn-primary" href="{{ url_for('ingredientes.crear') }}">Nuevo ingrediente</a>
+            <a class="btn btn-warning" href="{{ url_for('compras.crear', alerta_stock=1) }}">Solicitar compra</a>
+            <a class="btn btn-secondary" href="{{ url_for('inventario.index') }}">Volver al inventario</a>
+        </div>
+    </section>
 
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Categoría</th>
-            <th>Proveedor</th>
-            <th>Stock</th>
-            <th>Unidad</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for ingrediente in ingredientes %}
-        <tr>
-            <td>{{ ingrediente.id_materia }}</td>
-            <td>{{ ingrediente.nombre }}</td>
-            <td>{{ ingrediente.categoria_nombre }}</td>
-            <td>{{ ingrediente.proveedor_nombre }}</td>
-            <td>{{ ingrediente.stock_actual }}</td>
-            <td>{{ ingrediente.unidad_medida }}</td>
-            <td>
-                <span class="badge {{ 'active' if ingrediente.estado else 'inactive' }}">
-                    {{ 'Activo' if ingrediente.estado else 'Inactivo' }}
-                </span>
-            </td>
-            <td>
-                <button type="button" class="btn-view" onclick="window.location.href='{{ url_for("ingredientes.detalle", id=ingrediente.id_materia) }}'">Ver</button>
-                <button type="button" class="btn-edit" onclick="window.location.href='{{ url_for("ingredientes.editar", id=ingrediente.id_materia) }}'">Editar</button>
-                {% if ingrediente.estado %}
-                <form method="POST" action="{{ url_for('ingredientes.desactivar') }}" style="display:inline;">
-                    <input type="hidden" name="id" value="{{ ingrediente.id_materia }}">
-                    <button type="submit" class="btn-delete">Desactivar</button>
-                </form>
-                {% else %}
-                <form method="POST" action="{{ url_for('ingredientes.activar') }}" style="display:inline;">
-                    <input type="hidden" name="id" value="{{ ingrediente.id_materia }}">
-                    <button type="submit" class="btn-primary">Activar</button>
-                </form>
+    <section class="ingredients-metrics">
+        <article class="metric-card">
+            <span class="metric-label">Total registros</span>
+            <strong class="metric-value">{{ ns.total }}</strong>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Ingredientes activos</span>
+            <strong class="metric-value">{{ ns.activos }}</strong>
+        </article>
+        <article class="metric-card metric-card-alert">
+            <span class="metric-label">Stock bajo minimo</span>
+            <strong class="metric-value">{{ ns.bajos }}</strong>
+        </article>
+    </section>
+
+    <section class="ingredients-toolbar">
+        <div>
+            <form method="GET" action="{{ url_for('ingredientes.index') }}" class="ingredients-search-form">
+                <i class="bi bi-search"></i>
+                <input type="text" name="filtro" class="ingredients-search" placeholder="Buscar por nombre o categoria" value="{{ request.args.get('filtro', '') }}">
+                <button type="submit" class="btn btn-secondary">Buscar</button>
+            </form>
+        </div>
+        
+        {% if ingredientes %}
+        <div class="ingredient-filters">
+            <button class="ingredient-filter-btn active" data-category="all">
+                <span class="filter-label">Todas las categorías</span>
+            </button>
+            {% set categorias_unicas = [] %}
+            {% for ing in ingredientes %}
+                {% if ing.categoria_nombre not in categorias_unicas %}
+                    {% set _ = categorias_unicas.append(ing.categoria_nombre) %}
                 {% endif %}
-            </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="8" style="text-align:center;">No hay ingredientes registrados.</td></tr>
+            {% endfor %}
+            {% for categoria in categorias_unicas | sort %}
+                <button class="ingredient-filter-btn" data-category="{{ categoria | lower }}" data-category-display="{{ categoria }}">
+                    <span class="filter-label">{{ categoria }}</span>
+                    <span class="filter-count">{{ ingredientes | selectattr('categoria_nombre', 'equalto', categoria) | list | length }}</span>
+                </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+
+    {% if ingredientes %}
+    <section class="ingredients-grid-wrapper">
+        {% set categorias_grouped = {} %}
+        {% for ing in ingredientes | sort(attribute='categoria_nombre') %}
+            {% set cat = ing.categoria_nombre %}
+            {% if cat not in categorias_grouped %}
+                {% set _ = categorias_grouped.update({cat: []}) %}
+            {% endif %}
+            {% set _ = categorias_grouped[cat].append(ing) %}
         {% endfor %}
-    </tbody>
-</table>
+
+        <div class="ingredients-grid" id="ingredientesGrid">
+            {% for categoria in categorias_grouped | sort %}
+                <section class="ingredient-category-section" data-category="{{ categoria | lower }}">
+                    <h2 class="category-title">
+                        <span class="category-icon">📦</span>
+                        {{ categoria }}
+                    </h2>
+                    <div class="ingredient-cards-grid">
+                        {% for ingrediente in categorias_grouped[categoria] %}
+                        <article class="ingredient-card" data-ingredient-id="{{ ingrediente.id_materia }}" data-category="{{ ingrediente.categoria_nombre | lower }}">
+                            <div class="card-header">
+                                <div class="card-title-section">
+                                    <h3 class="card-title">{{ ingrediente.nombre }}</h3>
+                                    <span class="card-id">#{{ ingrediente.id_materia }}</span>
+                                </div>
+                                <span class="status-pill {{ 'active' if ingrediente.estado else 'inactive' }}">
+                                    {{ 'Activo' if ingrediente.estado else 'Inactivo' }}
+                                </span>
+                            </div>
+
+                            <div class="card-content">
+                                <div class="card-field">
+                                    <span class="field-label">Proveedor</span>
+                                    <span class="field-value">{{ ingrediente.proveedor_nombre }}</span>
+                                </div>
+                                <div class="card-field">
+                                    <span class="field-label">Unidad</span>
+                                    <span class="field-value">{{ ingrediente.unidad_medida }}</span>
+                                </div>
+                                <div class="card-field">
+                                    <span class="field-label">Stock mínimo</span>
+                                    <span class="field-value">{{ ingrediente.stock_minimo }}</span>
+                                </div>
+                            </div>
+
+                            <div class="card-stock">
+                                <div class="stock-info">
+                                    <span class="stock-label">Stock actual</span>
+                                    <span class="stock-value {{ 'low' if ingrediente.stock_actual < ingrediente.stock_minimo else 'ok' }}">
+                                        {{ ingrediente.stock_actual }} {{ ingrediente.unidad_medida }}
+                                    </span>
+                                </div>
+                                <span class="stock-pill {{ 'low' if ingrediente.stock_actual < ingrediente.stock_minimo else 'ok' }}">
+                                    {{ 'Bajo' if ingrediente.stock_actual < ingrediente.stock_minimo else 'Normal' }}
+                                </span>
+                            </div>
+
+                            <div class="card-actions">
+                                <a class="btn-card btn-view" href="{{ url_for('ingredientes.detalle', id=ingrediente.id_materia) }}">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                                <a class="btn-card btn-edit" href="{{ url_for('ingredientes.editar', id=ingrediente.id_materia) }}">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                                {% if ingrediente.stock_actual <= ingrediente.stock_minimo %}
+                                <a class="btn-card btn-warning" href="{{ url_for('compras.crear_desde_alerta', id_materia=ingrediente.id_materia) }}">
+                                    <i class="bi bi-cart-plus"></i> Compra
+                                </a>
+                                {% endif %}
+                                {% if ingrediente.estado %}
+                                <form method="POST" action="{{ url_for('ingredientes.desactivar') }}" class="form-inline">
+                                    <input type="hidden" name="id" value="{{ ingrediente.id_materia }}">
+                                    <button type="submit" class="btn-card btn-delete">
+                                        <i class="bi bi-x-circle"></i> Desactivar
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('ingredientes.activar') }}" class="form-inline">
+                                    <input type="hidden" name="id" value="{{ ingrediente.id_materia }}">
+                                    <button type="submit" class="btn-card btn-activate">
+                                        <i class="bi bi-check-circle"></i> Activar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <section class="ingredients-empty">
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h2>No hay ingredientes registrados</h2>
+            <p>Crea tu primer ingrediente para comenzar a gestionar el inventario.</p>
+            <a class="btn btn-primary" href="{{ url_for('ingredientes.crear') }}">Crear ingrediente</a>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filterButtons = document.querySelectorAll('.ingredient-filter-btn');
+    const categorySections = document.querySelectorAll('.ingredient-category-section');
+
+    if (!filterButtons.length || !categorySections.length) {
+        return;
+    }
+
+    function applyCategoryFilter(category) {
+        categorySections.forEach((section) => {
+            const sectionCategory = section.dataset.category;
+            const show = category === 'all' || sectionCategory === category;
+            section.style.display = show ? '' : 'none';
+        });
+    }
+
+    filterButtons.forEach((button) => {
+        button.addEventListener('click', function () {
+            const selectedCategory = this.dataset.category || 'all';
+
+            filterButtons.forEach((btn) => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            applyCategoryFilter(selectedCategory);
+        });
+    });
+});
+</script>
 {% endblock %}

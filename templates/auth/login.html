@@ -1,45 +1,224 @@
 {% extends "base.html" %}
 {% block title %}Iniciar Sesión{% endblock %}
 {% block head %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/login.css') }}">
+{% if config.get('LOGIN_CAPTCHA_ENABLED') %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+{% endif %}
 {% endblock %}
-{% block container %}
-   <div class="login-container">
+
+{% block content %}
+<div class="login-shell">
     <div class="login-box">
-        <div class="login-logo">
-            <img src="{{ url_for('static', filename='imagen/logoFonda.jpg') }}" alt="Fonda Gourmet">
+        <div class="login-header">
+            {% if config.get('LOGO_PATH') %}
+            <div class="login-logo">
+                <img src="{{ url_for('static', filename='imagen/logoFonda.jpg') }}" alt="Logo Fonda Gourmet">
+            </div>
+            {% else %}
+            <div class="login-logo">
+                <img src="{{ url_for('static', filename='imagen/logoFonda.jpg') }}" alt="Logo Fonda Gourmet" style="width: 80px; height: auto;">
+            </div>
+            {% endif %}
+            <h1 class="login-title">Casa Gourmet</h1>
+            <p class="login-subtitle">Inicia sesión para continuar</p>
         </div>
-        <div class="login-titles">
-            <h2>Casa Gourmet</h2>
-        </div>
-        <form method="POST" novalidate>
+
+        <form method="POST" class="login-form" novalidate id="loginForm">
             {{ form.hidden_tag() }}
+            <input type="hidden" name="cf-turnstile-response" id="cf-turnstile-response">
+
+
             <div class="form-group">
-                {{ form.username.label(class="form-label fw-bold") }}
-                            {{ form.username(class="form-control form-control-lg") }}
+                <label for="{{ form.username.id }}" class="form-label">
+                    <i class="bi bi-person"></i> Usuario
+                </label>
+                {{ form.username(class="form-control", placeholder="Ingresa tu usuario", autocomplete="username") }}
+                {% if form.username.errors %}
+                {% for error in form.username.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+                {% endif %}
             </div>
+
             <div class="form-group">
-                {{ form.contrasena.label(class="form-label fw-bold") }}
-                            {{ form.contrasena(class="form-control form-control-lg") }}
+                <label for="{{ form.contrasena.id }}" class="form-label">
+                    <i class="bi bi-lock"></i> Contraseña
+                </label>
+                {{ form.contrasena(class="form-control", placeholder="Ingresa tu contraseña", autocomplete="current-password") }}
+                {% if form.contrasena.errors %}
+                {% for error in form.contrasena.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+                {% endif %}
             </div>
+
             <div class="form-group">
-                <label for="captcha">Captcha: ¿Cuánto es 8 + 5?</label>
-                            {{ form.captcha(class="form-control form-control-lg") }}
-            </div>
-           <div class="button-group">
-            <button type="submit" class="login-btn">Ingresar</button>  
-                <a href="{{ url_for('index') }}" class="btn volver-btn">Cancelar</a>
+                <label class="form-label">
+                    <i class="bi bi-shield-check"></i> Verifica que eres humano
+                </label>
+                <div class="captcha-wrap">
+                    {% if config.get('LOGIN_CAPTCHA_ENABLED') %}
+                    <div id="turnstile-widget"></div>
+                    <p class="captcha-help">El CAPTCHA se valida automáticamente al presionar Ingresar.</p>
+                    {% else %}
+                    <p class="captcha-help">CAPTCHA desactivado temporalmente por configuración.</p>
+                    {% endif %}
                 </div>
-                 </form>
-           
-        <div class="card-footer text-center text-muted py-3">
-                    ¿No tienes cuenta? 
-                    <a href="{{ url_for('cuenta.crear') }}" class="text-decoration-none">Crear cuenta</a>
-                </div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="login-button" id="loginSubmitBtn">
+                    <i class="bi bi-box-arrow-in-right"></i> Ingresar
+                </button>
+                <small id="captchaRuntimeMessage" class="form-error" style="display:none;"></small>
+                <a href="{{ url_for('tienda.index') }}" class="btn btn-terciary">
+                    <i class="bi bi-arrow-left"></i> Volver a la tienda
+                </a>
+            </div>
+
+            <div class="login-meta">
+                <a href="{{ url_for('auth.forgot_password') }}" class="login-meta-link">¿Olvidaste tu contraseña?</a>
+            </div>
+        </form>
+
+        <div class="login-footer">
+            <p class="login-footer-text">
+                ¿No tienes cuenta?
+                <a href="{{ url_for('cuenta.crear') }}" class="login-footer-link">Crear cuenta</a>
+            </p>
+        </div>
     </div>
-                
-    </div>
+</div>
 {% endblock %}
+
 {% block scripts %}
-    <script src="{{ url_for('static', filename='js/pages/login.js') }}"></script>
+{{ super() }}
+{% if config.get('LOGIN_CAPTCHA_ENABLED') %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('loginSubmitBtn');
+    const tokenInput = document.getElementById('cf-turnstile-response');
+    const runtimeMsg = document.getElementById('captchaRuntimeMessage');
+    if (!form || !submitBtn || !tokenInput) return;
+
+    let widgetId = null;
+    let allowSubmit = false;
+    let captchaRequested = false;
+    let captchaTimeoutId = null;
+    const CAPTCHA_TIMEOUT_MS = 10000;
+    const defaultBtnHtml = submitBtn.innerHTML;
+
+    function showRuntimeMessage(message) {
+        if (!runtimeMsg) return;
+        runtimeMsg.textContent = message || '';
+        runtimeMsg.style.display = message ? 'block' : 'none';
+    }
+
+    function setSubmittingState(isSubmitting) {
+        submitBtn.disabled = isSubmitting;
+        submitBtn.innerHTML = isSubmitting
+            ? '<i class="bi bi-shield-lock"></i> Validando CAPTCHA...'
+            : defaultBtnHtml;
+    }
+
+    function clearCaptchaTimeout() {
+        if (captchaTimeoutId) {
+            clearTimeout(captchaTimeoutId);
+            captchaTimeoutId = null;
+        }
+    }
+
+    function startCaptchaTimeout() {
+        clearCaptchaTimeout();
+        captchaTimeoutId = setTimeout(function () {
+            if (!captchaRequested) {
+                return;
+            }
+
+            captchaRequested = false;
+            allowSubmit = false;
+            tokenInput.value = '';
+            setSubmittingState(false);
+            showRuntimeMessage('No se pudo validar CAPTCHA, intenta de nuevo.');
+
+            if (window.turnstile && widgetId !== null) {
+                window.turnstile.reset(widgetId);
+            }
+        }, CAPTCHA_TIMEOUT_MS);
+    }
+
+    function ensureTurnstile() {
+        if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+            setTimeout(ensureTurnstile, 80);
+            return;
+        }
+
+        widgetId = window.turnstile.render('#turnstile-widget', {
+            sitekey: '{{ config.get("TURNSTILE_SITE_KEY") }}',
+            theme: 'light',
+            language: 'es-MX',
+            size: 'invisible',
+            callback: function (token) {
+                if (!captchaRequested) {
+                    return;
+                }
+
+                clearCaptchaTimeout();
+                captchaRequested = false;
+                tokenInput.value = token || '';
+                allowSubmit = true;
+                showRuntimeMessage('');
+                form.submit();
+            },
+            'error-callback': function () {
+                clearCaptchaTimeout();
+                tokenInput.value = '';
+                allowSubmit = false;
+                captchaRequested = false;
+                setSubmittingState(false);
+                showRuntimeMessage('No se pudo validar CAPTCHA, intenta de nuevo.');
+            },
+            'expired-callback': function () {
+                clearCaptchaTimeout();
+                tokenInput.value = '';
+                allowSubmit = false;
+                captchaRequested = false;
+                setSubmittingState(false);
+                showRuntimeMessage('El CAPTCHA expiró, intenta de nuevo.');
+            }
+        });
+    }
+
+    form.addEventListener('submit', function (event) {
+        if (allowSubmit) {
+            allowSubmit = false;
+            return;
+        }
+
+        event.preventDefault();
+
+        if (captchaRequested) {
+            return;
+        }
+
+        if (!window.turnstile || widgetId === null) {
+            setSubmittingState(false);
+            showRuntimeMessage('CAPTCHA no disponible. Recarga la página e inténtalo de nuevo.');
+            return;
+        }
+
+        captchaRequested = true;
+        tokenInput.value = '';
+        showRuntimeMessage('');
+        setSubmittingState(true);
+        startCaptchaTimeout();
+        window.turnstile.execute(widgetId);
+    });
+
+    ensureTurnstile();
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
-from wtforms import StringField, IntegerField, SubmitField, RadioField, BooleanField, DateField, SelectField, EmailField, FloatField, PasswordField, TextAreaField, HiddenField
+from wtforms import StringField, IntegerField, SubmitField, RadioField, BooleanField, DateField, DateTimeField, SelectField, EmailField, FloatField, PasswordField, TextAreaField, HiddenField
 from wtforms import validators
 from models import Usuario, Persona
 from wtforms.validators import ValidationError, DataRequired, Email, Length, EqualTo, Regexp, Optional
@@ -13,12 +13,37 @@ class LoginForm(FlaskForm):
     contrasena = PasswordField('Contraseña', [
         validators.DataRequired(message="La contraseña es obligatoria.")
         ])
-    
-    captcha = StringField('Captcha', [
-        validators.DataRequired(message="El captcha es obligatorio.")
-        ])
    
     submit = SubmitField('Iniciar sesión')
+
+
+class RecuperarPasswordForm(FlaskForm):
+    correo = EmailField('Correo electrónico', [
+        validators.DataRequired(message='El correo es obligatorio.'),
+        validators.Email(message='Ingresa un correo válido.'),
+        validators.Length(min=5, max=100, message='El correo debe tener entre 5 y 100 caracteres.'),
+    ])
+    submit = SubmitField('Enviar enlace')
+
+
+class ResetPasswordForm(FlaskForm):
+    contrasena = PasswordField('Nueva contraseña', [
+        validators.DataRequired(message='La contraseña es obligatoria.'),
+        validators.Length(min=8, message='La contraseña debe tener al menos 8 caracteres.'),
+    ])
+    confirmar_contrasena = PasswordField('Confirmar contraseña', [
+        validators.DataRequired(message='La confirmación de contraseña es obligatoria.'),
+        validators.EqualTo('contrasena', message='Las contraseñas deben coincidir.'),
+    ])
+    submit = SubmitField('Restablecer contraseña')
+
+
+class Verificar2FAForm(FlaskForm):
+    codigo = StringField('Código de verificación', [
+        validators.DataRequired(message='El código es obligatorio.'),
+        validators.Regexp(r'^\d{6}$', message='El código debe tener 6 dígitos.'),
+    ])
+    submit = SubmitField('Verificar código')
 
 class RegistroUsuarioForm(FlaskForm):
     nombre = StringField('Nombre', [
@@ -168,10 +193,13 @@ class RegistroProveedorForm(FlaskForm):
         ])
 
     id_categoria_proveedor = SelectField('Categoría de proveedor', coerce=int, validators=[
-        validators.Optional()
+        validators.Optional(),
+        validators.NumberRange(min=1, message="Selecciona una categoría de proveedor válida.")
     ])
 
-    usar_categoria_nueva = BooleanField('Crear nueva categoría de proveedor')
+    usar_categoria_nueva = BooleanField('Crear nueva categoría de proveedor', default=False, validators=[
+        validators.Optional()
+    ])
     nombre_nueva_categoria = StringField('Nombre nueva categoría', [
         validators.Optional(),
         validators.Length(min=2, max=100, message="La nueva categoría debe tener entre 2 y 100 caracteres.")
@@ -417,6 +445,11 @@ class RegistrarIngredienteForm(FlaskForm):
         ('pz', 'Piezas')
     ])
     
+    stock_actual = FloatField('Stock actual', [
+        validators.DataRequired(message="El stock actual es obligatorio."),
+        validators.NumberRange(min=0, message="El stock actual no puede ser negativo.")
+    ])
+    
     stock_minimo = FloatField('Stock mínimo', [
         validators.DataRequired(message="El stock mínimo es obligatorio."),
         validators.NumberRange(min=0, message="El stock mínimo no puede ser negativo.")
@@ -426,17 +459,17 @@ class RegistrarIngredienteForm(FlaskForm):
         validators.DataRequired(message="El precio es obligatorio."),
         validators.NumberRange(min=0, message="El precio no puede ser negativo.")
     ])
-    
-    porcentaje_merma = FloatField('Porcentaje de mermas', [
-        validators.DataRequired(message="El porcentaje de mermas es obligatorio."),
-        validators.NumberRange(min=0, max=100, message="El porcentaje de mermas debe estar entre 0 y 100.")
+
+    porcentaje_merma = FloatField('% Merma', [
+        validators.Optional(),
+        validators.NumberRange(min=0, max=100, message="La merma debe estar entre 0 y 100.")
     ])
-    
+
     factor_conversion = FloatField('Factor de conversión', [
-        validators.DataRequired(message="El factor de conversión es obligatorio."),
-        validators.NumberRange(min=0.0001, message="El factor de conversión no puede ser cero.")
+        validators.Optional(),
+        validators.NumberRange(min=0.0001, message="El factor de conversión debe ser mayor que 0.")
     ])
-        
+    
     id_categoria_ingrediente = SelectField('Categoría ingrediente', coerce=int, validators=[
         validators.DataRequired(message="La categoría es obligatoria.")
     ])
@@ -453,7 +486,7 @@ class RegistrarIngredienteForm(FlaskForm):
         categorias = CategoriaIngrediente.query.filter_by(estado=True).order_by(CategoriaIngrediente.nombre.asc()).all()
         proveedores = Proveedor.query.all()
         self.id_categoria_ingrediente.choices = [(cat.id_categoria_ingrediente, cat.nombre) for cat in categorias]
-        self.id_proveedor.choices = [(p.id_proveedor, p.persona.nombre) for p in proveedores]
+        self.id_proveedor.choices = [(0, 'Selecciona un proveedor')] + [(p.id_proveedor, p.persona.nombre) for p in proveedores]
     
 class EditarIngredienteForm(FlaskForm):
     nombre = StringField('Nombre del ingrediente', [
@@ -486,17 +519,17 @@ class EditarIngredienteForm(FlaskForm):
         validators.Optional(),
         validators.NumberRange(min=0, message="El precio no puede ser negativo.")
     ])
-    
-    porcentaje_merma = FloatField('Porcentaje de mermas', [
+
+    porcentaje_merma = FloatField('% Merma', [
         validators.Optional(),
-        validators.NumberRange(min=0, max=100, message="El porcentaje de mermas debe estar entre 0 y 100.")
-    ])
-    
-    factor_conversion = FloatField('Factor de conversión', [
-        validators.Optional(),
-        validators.NumberRange(min=0.0001, message="El factor de conversión no puede ser cero.")  # 🔥 nunca 0
+        validators.NumberRange(min=0, max=100, message="La merma debe estar entre 0 y 100.")
     ])
 
+    factor_conversion = FloatField('Factor de conversión', [
+        validators.Optional(),
+        validators.NumberRange(min=0.0001, message="El factor de conversión debe ser mayor que 0.")
+    ])
+    
     id_categoria_ingrediente = SelectField('Categoría ingrediente', coerce=int, validators=[validators.Optional()])
     id_proveedor = SelectField('Proveedor', coerce=int, validators=[validators.Optional()])
     
@@ -508,7 +541,7 @@ class EditarIngredienteForm(FlaskForm):
         categorias = CategoriaIngrediente.query.filter_by(estado=True).order_by(CategoriaIngrediente.nombre.asc()).all()
         proveedores = Proveedor.query.all()
         self.id_categoria_ingrediente.choices = [(cat.id_categoria_ingrediente, cat.nombre) for cat in categorias]
-        self.id_proveedor.choices = [(p.id_proveedor, p.persona.nombre) for p in proveedores]
+        self.id_proveedor.choices = [(0, 'Selecciona un proveedor')] + [(p.id_proveedor, p.persona.nombre) for p in proveedores]
 
 
 class RegistrarCompraIngredienteForm(FlaskForm):
@@ -610,16 +643,6 @@ class MateriaPrimaForm(FlaskForm):
         validators.NumberRange(min=0)
     ])
 
-    porcentaje_merma = FloatField('Merma (%)', [
-        validators.DataRequired(),
-        validators.NumberRange(min=0, max=100)
-    ])
-
-    factor_conversion = FloatField('Factor conversión', [
-        validators.DataRequired(),
-        validators.NumberRange(min=0.0001)
-    ])
-
     id_categoria_ingrediente = SelectField('Categoría ingrediente', coerce=int)
     id_proveedor = SelectField('Proveedor', coerce=int)
 
@@ -695,13 +718,55 @@ class DetalleCompraForm(FlaskForm):
     submit = SubmitField('Agregar')
 
 class VentaForm(FlaskForm):
+    id_cliente = SelectField('Cliente (Opcional)', coerce=int, validators=[
+        validators.Optional()
+    ])
+    
+    fecha_necesaria = DateField('Fecha necesaria (Opcional)', validators=[
+        validators.Optional()
+    ], format='%Y-%m-%d')
+    
+    metodo_pago = SelectField('Método de pago', choices=[
+        ('', 'Selecciona método de pago'),
+        ('Efectivo', 'Efectivo'),
+        ('Tarjeta', 'Tarjeta'),
+        ('Transferencia', 'Transferencia')
+    ], validators=[
+        validators.DataRequired('El método de pago es obligatorio')
+    ])
+    
+    submit = SubmitField('Registrar Venta')
+    
+    def __init__(self, *args, **kwargs):
+        super(VentaForm, self).__init__(*args, **kwargs)
+        from models import Cliente
+        clientes = Cliente.query.all()
+        self.id_cliente.choices = [(0, 'Selecciona un cliente (opcional)')] + [(c.id_cliente, c.persona.nombre) for c in clientes]
+
+class PedidoForm(FlaskForm):
+    id_cliente = SelectField('Cliente', coerce=int, validators=[
+        validators.Optional()
+    ])
+    
     metodo_pago = SelectField('Método de pago', choices=[
         ('Efectivo', 'Efectivo'),
         ('Tarjeta', 'Tarjeta'),
         ('Transferencia', 'Transferencia')
+    ], validators=[
+        validators.DataRequired('El método de pago es obligatorio')
     ])
     
-    submit = SubmitField('Registrar Venta')
+    fecha_necesaria = DateTimeField('Fecha y hora requerida', validators=[
+        validators.Optional()
+    ], format='%Y-%m-%dT%H:%M')
+    
+    submit = SubmitField('Guardar pedido')
+    
+    def __init__(self, *args, **kwargs):
+        super(PedidoForm, self).__init__(*args, **kwargs)
+        from models import Cliente
+        clientes = Cliente.query.all()
+        self.id_cliente.choices = [(0, 'Venta en sucursal')] + [(c.id_cliente, f"{c.persona.nombre} {c.persona.apellido_p}") for c in clientes]
 
 class DetalleVentaForm(FlaskForm):
     id_producto = SelectField('Producto', coerce=int)
@@ -717,6 +782,39 @@ class CategoriaForm(FlaskForm):
     nombre = StringField('Nombre', [validators.DataRequired()])
     descripcion = TextAreaField('Descripción')
     submit = SubmitField('Guardar Categoría')
+
+
+class ContactoForm(FlaskForm):
+    nombre = StringField('Nombre', [
+        validators.DataRequired(message='El nombre es obligatorio.'),
+        validators.Length(min=2, max=80, message='El nombre debe tener entre 2 y 80 caracteres.')
+    ])
+
+    email = EmailField('Email', [
+        validators.DataRequired(message='El email es obligatorio.'),
+        validators.Email(message='Ingresa un correo electrónico válido.'),
+        validators.Length(max=120, message='El correo no debe exceder 120 caracteres.')
+    ])
+
+    telefono = StringField('Teléfono', [
+        validators.Optional(),
+        validators.Length(max=20, message='El teléfono no debe exceder 20 caracteres.')
+    ])
+
+    asunto = StringField('Asunto', [
+        validators.DataRequired(message='El asunto es obligatorio.'),
+        validators.Length(min=4, max=120, message='El asunto debe tener entre 4 y 120 caracteres.')
+    ])
+
+    mensaje = TextAreaField('Mensaje', [
+        validators.DataRequired(message='El mensaje es obligatorio.'),
+        validators.Length(min=10, max=2000, message='El mensaje debe tener entre 10 y 2000 caracteres.')
+    ])
+
+    contacto_destino_email = HiddenField('Destino Email', [validators.Optional()])
+    contacto_destino_telefono = HiddenField('Destino Teléfono', [validators.Optional()])
+
+    submit = SubmitField('Enviar Mensaje')
 
 
 class CrearProductoForm(FlaskForm):
@@ -745,11 +843,46 @@ class CrearProductoForm(FlaskForm):
         validators.NumberRange(min=0, message="El stock mínimo no puede ser negativo.")
     ])
     
-    id_categoria_platillo = SelectField('Categoría platillo', [
-        validators.DataRequired(message="Debe seleccionar una categoría.")
-    ], coerce=int)
+    id_categoria_platillo = SelectField('Categoría platillo', coerce=int, validators=[
+        validators.Optional(),
+        validators.NumberRange(min=1, message="Selecciona una categoría válida.")
+    ])
+
+    usar_categoria_nueva = BooleanField('Crear nueva categoría de platillo', default=False, validators=[
+        validators.Optional()
+    ])
+
+    nombre_nueva_categoria = StringField('Nombre nueva categoría', [
+        validators.Optional(),
+        validators.Length(min=2, max=100, message="La nueva categoría debe tener entre 2 y 100 caracteres.")
+    ])
 
     ingredientes_json = HiddenField('Ingredientes receta')
+
+    rendimiento = FloatField('Rendimiento (%)', [
+        validators.Optional(),
+        validators.NumberRange(min=0.01, max=1000, message='El rendimiento debe ser mayor a 0.')
+    ], default=100)
+
+    cantidad_produccion = FloatField('Cantidad que produce', [
+        validators.Optional(),
+        validators.NumberRange(min=0.01, message='La cantidad de producción debe ser mayor a 0.')
+    ], default=1)
+
+    unidad_produccion = SelectField('Unidad de producción', choices=[
+        ('pz', 'Piezas (pz)'),
+        ('kg', 'Kilogramos (kg)'),
+        ('g', 'Gramos (g)'),
+        ('l', 'Litros (l)'),
+        ('ml', 'Mililitros (ml)')
+    ], validators=[
+        validators.Optional()
+    ], default='pz')
+
+    nota_receta = TextAreaField('Nota de receta', [
+        validators.Optional(),
+        validators.Length(max=500, message='La nota no debe exceder 500 caracteres.')
+    ])
     
     imagen = FileField('Imagen', validators=[
         FileAllowed(['jpg', 'jpeg', 'png', 'webp'], 'Solo se permiten imágenes JPG, JPEG, PNG o WEBP.')
@@ -762,6 +895,26 @@ class CrearProductoForm(FlaskForm):
         from models import CategoriaPlatillo
         categorias = CategoriaPlatillo.query.filter_by(estado=True).order_by(CategoriaPlatillo.nombre.asc()).all()
         self.id_categoria_platillo.choices = [(cat.id_categoria_platillo, cat.nombre) for cat in categorias]
+
+    def validate_nombre_nueva_categoria(self, field):
+        if self.usar_categoria_nueva.data and not (field.data or '').strip():
+            raise ValidationError('Debes capturar el nombre de la nueva categoría o desmarcar el check.')
+
+    def validate(self, extra_validators=None):
+        if not super(CrearProductoForm, self).validate(extra_validators=extra_validators):
+            return False
+
+        usar_nueva = bool(self.usar_categoria_nueva.data)
+        nombre_nueva = (self.nombre_nueva_categoria.data or '').strip()
+
+        if usar_nueva and nombre_nueva:
+            return True
+
+        if not usar_nueva and self.id_categoria_platillo.data:
+            return True
+
+        self.id_categoria_platillo.errors.append('La categoría es obligatoria o marca el check para crear una nueva.')
+        return False
 
 
 class EditarProductoForm(FlaskForm):
@@ -790,9 +943,19 @@ class EditarProductoForm(FlaskForm):
         validators.NumberRange(min=0, message="El stock mínimo no puede ser negativo.")
     ])
     
-    id_categoria_platillo = SelectField('Categoría platillo', [
+    id_categoria_platillo = SelectField('Categoría platillo', coerce=int, validators=[
+        validators.Optional(),
+        validators.NumberRange(min=1, message="Selecciona una categoría válida.")
+    ])
+
+    usar_categoria_nueva = BooleanField('Crear nueva categoría de platillo', default=False, validators=[
         validators.Optional()
-    ], coerce=int)
+    ])
+
+    nombre_nueva_categoria = StringField('Nombre nueva categoría', [
+        validators.Optional(),
+        validators.Length(min=2, max=100, message="La nueva categoría debe tener entre 2 y 100 caracteres.")
+    ])
     
     imagen = FileField('Reemplazar imagen', validators=[
         FileAllowed(['jpg', 'jpeg', 'png', 'webp'], 'Solo se permiten imágenes JPG, JPEG, PNG o WEBP.')
@@ -805,3 +968,7 @@ class EditarProductoForm(FlaskForm):
         from models import CategoriaPlatillo
         categorias = CategoriaPlatillo.query.filter_by(estado=True).order_by(CategoriaPlatillo.nombre.asc()).all()
         self.id_categoria_platillo.choices = [(cat.id_categoria_platillo, cat.nombre) for cat in categorias]
+
+    def validate_nombre_nueva_categoria(self, field):
+        if self.usar_categoria_nueva.data and not (field.data or '').strip():
+            raise ValidationError('Debes capturar el nombre de la nueva categoría o desmarcar el check.')

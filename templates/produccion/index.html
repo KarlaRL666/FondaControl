@@ -37,6 +37,7 @@
         <input type="text" class="search" id="buscarProduccion" placeholder="Buscar orden, responsable o estado...">
         <input type="date" class="search" id="filtroFechaProduccion" title="Filtrar por fecha necesaria">
         <select class="filter" id="filtroEstadoProduccion">
+            <option value="pendientes" selected>Solicitadas y en proceso</option>
             <option value="todas">Todas las órdenes</option>
             <option value="solicitada">Solicitadas</option>
             <option value="en proceso">En proceso</option>
@@ -61,6 +62,7 @@
             <th>Fecha Solicitud</th>
             <th>Fecha a Completar</th>
             <th>Fecha Producción</th>
+            <th>Progreso</th>
             <th>Urgencia</th>
             <th>Acciones</th>
         </tr>
@@ -88,20 +90,26 @@
         </span>
     </td>
 
-    <td>{{ p.fecha_solicitud.strftime('%d/%m/%Y') }}</td>
-    <td>{{ p.fecha_necesaria.strftime('%d/%m/%Y') }}</td>
-    <td>{{ p.fecha_completada.strftime('%d/%m/%Y') if p.fecha_completada else 'Sin completar' }}</td>
-    <td>
-        {% if p.estado != 'Completada' and p.dias_restantes is not none and p.dias_restantes <= 1 %}
-    <span class="badge bg-danger">URGENTE</span>
-{% elif p.estado != 'Completada' and p.dias_restantes is not none and p.dias_restantes <= 2 %}
-    <span class="badge bg-warning">Próximo</span>
-{% else %}
-    <span class="badge bg-success">A tiempo</span>
-{% endif %}
+    <td>{{ p.fecha_solicitud.strftime('%d/%m/%Y %H:%M') if p.fecha_solicitud else 'N/D' }}</td>
+    <td data-fecha-necesaria-full="{{ p.fecha_necesaria.isoformat() if p.fecha_necesaria else '' }}">{{ p.fecha_necesaria.strftime('%d/%m/%Y %H:%M') if p.fecha_necesaria else 'N/D' }}</td>
+    <td>{{ p.fecha_completada.strftime('%d/%m/%Y %H:%M') if p.fecha_completada else 'Sin completar' }}</td>
+    <td style="min-width: 170px;">
+        <div class="progress" style="height: 10px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ p.progreso or 0 }}%"></div>
+        </div>
+        <small>{{ p.progreso or 0 }}%</small>
+    </td>
+    <td class="urgencia-cell">
+        <span class="badge urgencia-badge" data-estado="{{ p.estado.lower() }}" data-fecha-necesaria="{{ p.fecha_necesaria.isoformat() if p.fecha_necesaria else '' }}">Calculando...</span>
     </td>
     <td>
         <a href="{{ url_for('produccion.ver', id=p.id_produccion) }}" class="btn btn-view">Ver</a>
+        {% if current_user.id_rol == 1 and p.estado in ['Solicitada', 'En Proceso'] %}
+        <form method="POST" action="{{ url_for('produccion.cancelar', id=p.id_produccion) }}" style="display:inline-block;" class="js-delete-request-form" data-confirm-title="¿Eliminar solicitud de producción?" data-confirm-text="Se quitará esta solicitud y se limpiarán líneas en producción del pedido relacionado.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-delete btn-sm">Eliminar</button>
+        </form>
+        {% endif %}
     </td>
 </tr>
 {% endfor %}
@@ -111,7 +119,7 @@
 
 <div class="produccion-cards-mobile">
 {% for p in producciones %}
-<article class="produccion-mobile-card" data-dias-restantes="{{ p.dias_restantes if p.dias_restantes is not none else '' }}" data-estado="{{ p.estado }}" data-fecha-necesaria="{{ p.fecha_necesaria.strftime('%Y-%m-%d') if p.fecha_necesaria else '' }}">
+<article class="produccion-mobile-card" data-dias-restantes="{{ p.dias_restantes if p.dias_restantes is not none else '' }}" data-estado="{{ p.estado.lower() }}" data-fecha-necesaria="{{ p.fecha_necesaria.isoformat() if p.fecha_necesaria else '' }}">
     <div class="produccion-mobile-head">
         <div>
             <p class="produccion-mobile-kicker mb-1">Orden #{{ p.id_produccion }}</p>
@@ -128,24 +136,32 @@
     </div>
 
     <div class="produccion-mobile-meta">
-        <div><strong>Solicitud:</strong> {{ p.fecha_solicitud.strftime('%d/%m/%Y') }}</div>
-        <div><strong>A completar:</strong> {{ p.fecha_necesaria.strftime('%d/%m/%Y') }}</div>
-        <div><strong>Producción:</strong> {{ p.fecha_completada.strftime('%d/%m/%Y') if p.fecha_completada else 'Sin completar' }}</div>
+        <div><strong>Solicitud:</strong> {{ p.fecha_solicitud.strftime('%d/%m/%Y %H:%M') if p.fecha_solicitud else 'N/D' }}</div>
+        <div><strong>A completar:</strong> {{ p.fecha_necesaria.strftime('%d/%m/%Y %H:%M') if p.fecha_necesaria else 'N/D' }}</div>
+        <div><strong>Producción:</strong> {{ p.fecha_completada.strftime('%d/%m/%Y %H:%M') if p.fecha_completada else 'Sin completar' }}</div>
+    </div>
+
+    <div class="produccion-mobile-block">
+        <span class="produccion-mobile-label">Progreso</span>
+        <div class="progress" style="height: 10px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ p.progreso or 0 }}%"></div>
+        </div>
+        <small>{{ p.progreso or 0 }}%</small>
     </div>
 
     <div class="produccion-mobile-block">
         <span class="produccion-mobile-label">Urgencia</span>
-        {% if p.estado != 'Completada' and p.dias_restantes is not none and p.dias_restantes <= 1 %}
-            <span class="badge bg-danger">URGENTE</span>
-        {% elif p.estado != 'Completada' and p.dias_restantes is not none and p.dias_restantes <= 2 %}
-            <span class="badge bg-warning">Próximo</span>
-        {% else %}
-            <span class="badge bg-success">A tiempo</span>
-        {% endif %}
+        <span class="badge urgencia-badge" data-estado="{{ p.estado.lower() }}" data-fecha-necesaria="{{ p.fecha_necesaria.isoformat() if p.fecha_necesaria else '' }}">Calculando...</span>
     </div>
 
     <div class="produccion-mobile-actions">
         <a href="{{ url_for('produccion.ver', id=p.id_produccion) }}" class="btn btn-view">Ver</a>
+        {% if current_user.id_rol == 1 and p.estado in ['Solicitada', 'En Proceso'] %}
+        <form method="POST" action="{{ url_for('produccion.cancelar', id=p.id_produccion) }}" class="js-delete-request-form" data-confirm-title="¿Eliminar solicitud de producción?" data-confirm-text="Se quitará esta solicitud y se limpiarán líneas en producción del pedido relacionado.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-delete btn-sm">Eliminar</button>
+        </form>
+        {% endif %}
     </div>
 </article>
 {% endfor %}
@@ -184,6 +200,37 @@ function clasificarUrgencia(dias, estado) {
     return 'normal';
 }
 
+function calcularUrgenciaConHoras(fechaNecesariaStr, estado) {
+    if (!fechaNecesariaStr || estado === 'completada' || estado === 'cancelada') {
+        return { urgencia: 'normal', badge: '<span class="badge bg-success">A tiempo</span>' };
+    }
+    
+    try {
+        const fechaNecesaria = new Date(fechaNecesariaStr);
+        const ahora = new Date();
+        const tiempoRestante = fechaNecesaria - ahora;
+        const minutosRestantes = Math.floor(tiempoRestante / (1000 * 60));
+        const horasRestantes = Math.floor(tiempoRestante / (1000 * 60 * 60));
+        const diasRestantes = Math.floor(tiempoRestante / (1000 * 60 * 60 * 24));
+        
+        if (tiempoRestante < 0) {
+            return { urgencia: 'vencida', badge: '<span class="badge bg-danger">VENCIDA</span>' };
+        }
+        if (horasRestantes <= 2) {
+            return { urgencia: 'urgente', badge: '<span class="badge bg-danger">URGENTE</span>' };
+        }
+        if (diasRestantes <= 1) {
+            return { urgencia: 'urgente', badge: '<span class="badge bg-danger">URGENTE</span>' };
+        }
+        if (diasRestantes <= 2) {
+            return { urgencia: 'proxima', badge: '<span class="badge bg-warning">Próximo</span>' };
+        }
+        return { urgencia: 'normal', badge: '<span class="badge bg-success">A tiempo</span>' };
+    } catch (e) {
+        return { urgencia: 'normal', badge: '<span class="badge bg-secondary">N/D</span>' };
+    }
+}
+
 function aplicarFiltrosProduccion() {
     const buscador = document.getElementById('buscarProduccion');
     const filtroFecha = document.getElementById('filtroFechaProduccion');
@@ -198,37 +245,69 @@ function aplicarFiltrosProduccion() {
     const cards = document.querySelectorAll('.produccion-cards-mobile .produccion-mobile-card');
 
     filas.forEach((fila) => {
-        const diasRaw = fila.dataset.diasRestantes;
         const estado = normalizarTexto(fila.dataset.estado);
         const fechaFila = fila.dataset.fechaNecesaria || '';
-        const dias = diasRaw === '' ? null : parseInt(diasRaw, 10);
-        const urgencia = clasificarUrgencia(dias, estado);
+        const fechaNecesariaFila = fila.querySelector('[data-fecha-necesaria-full]')?.dataset.fechaNecesariaFull || '';
+        const urgenciaCalculada = calcularUrgenciaConHoras(fechaNecesariaFila, estado);
+        const urgencia = urgenciaCalculada.urgencia;
         const contenidoFila = normalizarTexto(fila.textContent);
         const coincideBusqueda = !textoBusqueda || contenidoFila.includes(textoBusqueda);
-        const coincideEstado = estadoSeleccionado === 'todas' || estado === estadoSeleccionado;
+        const coincideEstado = estadoSeleccionado === 'todas'
+            || estado === estadoSeleccionado
+            || (estadoSeleccionado === 'pendientes' && (estado === 'solicitada' || estado === 'en proceso'));
         const coincideFecha = !fechaNecesaria || fechaFila === fechaNecesaria;
         const coincideUrgencia = filtroUrgencia === 'todas' || urgencia === filtroUrgencia;
 
         fila.style.display = (coincideBusqueda && coincideEstado && coincideFecha && coincideUrgencia) ? '' : 'none';
+        
+        // Actualizar badge de urgencia
+        const badgeCell = fila.querySelector('.urgencia-cell .urgencia-badge');
+        if (badgeCell) {
+            badgeCell.innerHTML = urgenciaCalculada.badge;
+        }
     });
 
     cards.forEach((card) => {
-        const diasRaw = card.dataset.diasRestantes;
         const estado = normalizarTexto(card.dataset.estado);
         const fechaFila = card.dataset.fechaNecesaria || '';
-        const dias = diasRaw === '' ? null : parseInt(diasRaw, 10);
-        const urgencia = clasificarUrgencia(dias, estado);
+        const urgenciaCalculada = calcularUrgenciaConHoras(fechaFila, estado);
+        const urgencia = urgenciaCalculada.urgencia;
         const contenidoCard = normalizarTexto(card.textContent);
         const coincideBusqueda = !textoBusqueda || contenidoCard.includes(textoBusqueda);
-        const coincideEstado = estadoSeleccionado === 'todas' || estado === estadoSeleccionado;
-        const coincideFecha = !fechaNecesaria || fechaFila === fechaNecesaria;
+        const coincideEstado = estadoSeleccionado === 'todas'
+            || estado === estadoSeleccionado
+            || (estadoSeleccionado === 'pendientes' && (estado === 'solicitada' || estado === 'en proceso'));
         const coincideUrgencia = filtroUrgencia === 'todas' || urgencia === filtroUrgencia;
 
-        card.style.display = (coincideBusqueda && coincideEstado && coincideFecha && coincideUrgencia) ? '' : 'none';
+        card.style.display = (coincideBusqueda && coincideEstado && coincideUrgencia) ? '' : 'none';
+        
+        // Actualizar badge de urgencia
+        const badgeUrgencia = card.querySelector('.urgencia-badge');
+        if (badgeUrgencia) {
+            badgeUrgencia.innerHTML = urgenciaCalculada.badge;
+        }
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Calcular urgencias inicialmente
+    document.querySelectorAll('.urgencia-badge').forEach((badge) => {
+        const estado = badge.dataset.estado;
+        const fechaNecesaria = badge.dataset.fechaNecesaria;
+        const urgenciaCalculada = calcularUrgenciaConHoras(fechaNecesaria, estado);
+        badge.innerHTML = urgenciaCalculada.badge;
+    });
+    
+    // Actualizar urgencias cada minuto
+    setInterval(() => {
+        document.querySelectorAll('.urgencia-badge').forEach((badge) => {
+            const estado = badge.dataset.estado;
+            const fechaNecesaria = badge.dataset.fechaNecesaria;
+            const urgenciaCalculada = calcularUrgenciaConHoras(fechaNecesaria, estado);
+            badge.innerHTML = urgenciaCalculada.badge;
+        });
+    }, 60000);
+
     const contenedor = document.getElementById('filtrosUrgencia');
     const buscador = document.getElementById('buscarProduccion');
     const filtroFecha = document.getElementById('filtroFechaProduccion');
@@ -255,6 +334,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filtroFecha) {
         filtroFecha.addEventListener('change', aplicarFiltrosProduccion);
     }
+
+    document.querySelectorAll('.js-delete-request-form').forEach((form) => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = form.dataset.confirmTitle || '¿Confirmar eliminación?';
+            const text = form.dataset.confirmText || 'Esta acción no se puede deshacer.';
+
+            if (window.Swal) {
+                const res = await Swal.fire({
+                    title,
+                    text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#d33',
+                });
+                if (res.isConfirmed) {
+                    form.submit();
+                }
+                return;
+            }
+
+            if (confirm(text)) {
+                form.submit();
+            }
+        });
+    });
 
     aplicarFiltrosProduccion();
 });

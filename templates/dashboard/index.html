@@ -1,637 +1,401 @@
 {% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/dashboard.css') }}">
+{% endblock %}
+
+{% block head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- Encabezado con saludo personalizado -->
-    <div class="welcome-section mb-5">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div>
-                <p class="welcome-kicker mb-2">Panel comercial</p>
-                <h1 class="display-5 fw-bold mb-2 welcome-title">
-                    Bienvenido, {{ current_user.username }}
-                </h1>
-                <p class="welcome-subtitle mb-0">Resumen de ventas diarias, productos líderes y actividad operativa en tiempo real.</p>
+    <!-- Hero Section con saludo personalizado -->
+    <div class="hero-section mb-5">
+        <div class="hero-background"></div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-kicker">Panel de control</div>
+                <h1 class="hero-title">Bienvenido, {{ current_user.username }}</h1>
+                <p class="hero-subtitle">Resumen de ventas, productos destacados y actividad en tiempo real</p>
+                <div class="turno-panel {{ 'late' if turno_inicio_retrasado else 'ok' }}">
+                    <span class="turno-panel-title">Turno de caja</span>
+                    <span class="turno-panel-range">Programado: {{ turno_inicio_programado_txt }} - {{ turno_cierre_programado_txt }}</span>
+                    <span class="turno-panel-real">Inicio real: {{ turno_inicio_real_txt }}</span>
+                </div>
             </div>
-            <div class="date-time-card">
-                <div class="d-flex align-items-center gap-3">
-                    <i class="bi bi-calendar3 fs-2 text-warning"></i>
-                    <div>
-                        <div class="small text-secondary">Fecha actual</div>
-                        <div class="fw-bold" id="currentDate"></div>
+            <div class="hero-datetime">
+                <div class="datetime-card">
+                    <div class="datetime-icon">
+                        <i class="bi bi-calendar3"></i>
                     </div>
-                    <div class="vr"></div>
-                    <div>
-                        <div class="small text-secondary">Hora</div>
-                        <div class="fw-bold" id="currentTime"></div>
+                    <div class="datetime-info">
+                        <span class="datetime-label">Fecha</span>
+                        <span class="datetime-value" id="currentDate"></span>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tarjetas de estadísticas principales -->
-    <div class="row g-4 mb-5">
-        <div class="col-md-6 col-lg-3">
-            <div class="stat-card stat-card-primary">
-                <div class="stat-card-icon">
-                    <i class="bi bi-graph-up"></i>
-                </div>
-                <div class="stat-card-content">
-                    <h3 class="stat-card-title">Ventas del día</h3>
-                    <div class="stat-card-value">${{ '%.2f'|format(ventas_hoy_total) }}</div>
-                    <div class="stat-card-change">Monto acumulado de hoy</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 col-lg-3">
-            <div class="stat-card stat-card-success">
-                <div class="stat-card-icon">
-                    <i class="bi bi-trophy"></i>
-                </div>
-                <div class="stat-card-content">
-                    <h3 class="stat-card-title">Top producto</h3>
-                    <div class="stat-card-value">{{ top_producto_nombre }}</div>
-                    <div class="stat-card-change">{{ top_producto_cantidad }} unidades vendidas</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 col-lg-3">
-            <div class="stat-card stat-card-warning">
-                <div class="stat-card-icon">
-                    <i class="bi bi-bag-check"></i>
-                </div>
-                <div class="stat-card-content">
-                    <h3 class="stat-card-title">Pedidos completados hoy</h3>
-                    <div class="stat-card-value">{{ pedidos_completados_hoy }}</div>
-                    <div class="stat-card-change">Ventas reales registradas hoy</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 col-lg-3">
-            <div class="stat-card stat-card-info">
-                <div class="stat-card-icon">
-                    <i class="bi bi-grid-3x3-gap"></i>
-                </div>
-                <div class="stat-card-content">
-                    <h3 class="stat-card-title">Presentación top</h3>
-                    <div class="stat-card-value">{{ top_presentacion_nombre }}</div>
-                    <div class="stat-card-change">{{ top_presentacion_cantidad }} unidades</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4 mb-5">
-        <div class="col-lg-12">
-            <div class="card-modern border border-warning">
-                <div class="card-header-custom">
-                    <h5 class="mb-1 fw-bold">⚠ Alertas de stock bajo</h5>
-                    <p class="text-muted small mb-0">Materias primas y productos por debajo del mínimo</p>
-                </div>
-                <div class="card-body-custom">
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <h6 class="fw-bold text-warning mb-3">Materias primas</h6>
-                            {% if alertas_materias %}
-                                <ul class="list-group">
-                                    {% for materia in alertas_materias %}
-                                        <li class="list-group-item p-0">
-                                            <a class="d-flex justify-content-between align-items-start text-decoration-none text-reset px-3 py-2" href="{{ url_for('compras.crear_desde_alerta', id_materia=materia.id) }}">
-                                                <div>
-                                                    <div class="fw-bold">{{ materia.nombre }}</div>
-                                                    <small class="text-muted">Stock {{ materia.stock_actual }} / mínimo {{ materia.stock_minimo }} {{ materia.unidad_medida }}</small>
-                                                    {% if materia.compra_solicitada %}
-                                                        <small class="d-block text-info">Compra solicitada</small>
-                                                    {% endif %}
-                                                </div>
-                                                <span class="badge bg-danger rounded-pill">Bajo</span>
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <div class="alert alert-success mb-0">No hay materias primas con stock bajo.</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-6">
-                            <h6 class="fw-bold text-warning mb-3">Productos terminados</h6>
-                            {% if alertas_productos %}
-                                <ul class="list-group">
-                                    {% for producto in alertas_productos %}
-                                        <li class="list-group-item p-0">
-                                            <a class="d-flex justify-content-between align-items-start text-decoration-none text-reset px-3 py-2" href="{{ url_for('produccion.crear_desde_alerta', id_producto=producto.id) }}">
-                                                <div>
-                                                    <div class="fw-bold">{{ producto.nombre }}</div>
-                                                    <small class="text-muted">Stock {{ producto.stock_actual }} / mínimo {{ producto.stock_minimo }}</small>
-                                                </div>
-                                                <span class="badge bg-danger rounded-pill">Bajo</span>
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <div class="alert alert-success mb-0">No hay productos terminados con stock bajo.</div>
-                            {% endif %}
-                        </div>
+                <div class="datetime-divider"></div>
+                <div class="datetime-card">
+                    <div class="datetime-icon">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div class="datetime-info">
+                        <span class="datetime-label">Hora</span>
+                        <span class="datetime-value" id="currentTime"></span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gráficas y datos detallados -->
-    <div class="row g-4 mb-5">
+    <!-- KPI Cards - Estadísticas principales -->
+    <div class="stat-card-group mb-5">
+        <div class="stat-card" data-stat="sales">
+            <div class="stat-card-icon">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <div class="stat-card-label">Ventas hoy</div>
+            <div class="stat-card-value">${{ '%.2f'|format(ventas_hoy_total) }}</div>
+            <div class="stat-card-change">Monto acumulado</div>
+        </div>
+
+        <div class="stat-card success" data-stat="products">
+            <div class="stat-card-icon">
+                <i class="bi bi-award"></i>
+            </div>
+            <div class="stat-card-label">Producto top</div>
+            <div class="stat-card-value">{{ top_producto_nombre }}</div>
+            <div class="stat-card-change">{{ top_producto_cantidad }} unidades</div>
+        </div>
+
+        <div class="stat-card warning" data-stat="orders">
+            <div class="stat-card-icon">
+                <i class="bi bi-bag-check-fill"></i>
+            </div>
+            <div class="stat-card-label">Pedidos hoy</div>
+            <div class="stat-card-value">{{ pedidos_completados_hoy }}</div>
+            <div class="stat-card-change">Ventas completadas</div>
+        </div>
+
+        <div class="stat-card info" data-stat="presentations">
+            <div class="stat-card-icon">
+                <i class="bi bi-boxes"></i>
+            </div>
+            <div class="stat-card-label">Presentación top</div>
+            <div class="stat-card-value">{{ top_presentacion_nombre }}</div>
+            <div class="stat-card-change">{{ top_presentacion_cantidad }} unidades</div>
+        </div>
+    </div>
+
+    <!-- Alertas de Stock Bajo -->
+    <div class="alerts-section mb-5">
+        <div class="card-modern elevated">
+            <div class="card-header">
+                <div class="card-header-content">
+                    <h3 class="card-title">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Alertas de stock bajo
+                    </h3>
+                    <p class="card-subtitle">Materias primas y productos por debajo del mínimo</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alerts-grid">
+                    <!-- Alertas de Materias Primas -->
+                    <div class="alert-section">
+                        <h4 class="alert-section-title">
+                            <i class="bi bi-box-seam"></i>
+                            Materias primas
+                        </h4>
+                        {% if alertas_materias %}
+                            <div class="alert-items">
+                                {% for materia in alertas_materias %}
+                                <a href="{{ url_for('compras.crear_desde_alerta', id_materia=materia.id) }}" class="alert-item">
+                                    <div class="alert-item-content">
+                                        <div class="alert-item-name">{{ materia.nombre }}</div>
+                                        <div class="alert-item-info">
+                                            Stock: {{ materia.stock_actual }} / Mínimo: {{ materia.stock_minimo }} {{ materia.unidad_medida }}
+                                        </div>
+                                        {% if materia.compra_solicitada %}
+                                            <div class="alert-item-status">
+                                                <span class="badge-modern info">
+                                                    <i class="bi bi-hour-glass"></i>
+                                                    Compra solicitada
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge-modern danger">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        Bajo
+                                    </span>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert-modern success-modern">
+                                <i class="bi bi-check-circle"></i>
+                                <span>No hay materias primas con stock bajo</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Alertas de Productos -->
+                    <div class="alert-section">
+                        <h4 class="alert-section-title">
+                            <i class="bi bi-tag"></i>
+                            Productos terminados
+                        </h4>
+                        {% if alertas_productos %}
+                            <div class="alert-items">
+                                {% for producto in alertas_productos %}
+                                <a href="{{ url_for('produccion.crear_desde_alerta', id_producto=producto.id) }}" class="alert-item">
+                                    <div class="alert-item-content">
+                                        <div class="alert-item-name">{{ producto.nombre }}</div>
+                                        <div class="alert-item-info">
+                                            Stock: {{ producto.stock_actual }} / Mínimo: {{ producto.stock_minimo }}
+                                        </div>
+                                        {% if producto.produccion_solicitada %}
+                                            <div class="alert-item-status">
+                                                <span class="badge-modern success">
+                                                    <i class="bi bi-check-circle"></i>
+                                                    Producción solicitada
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge-modern danger">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        Bajo
+                                    </span>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert-modern success-modern">
+                                <i class="bi bi-check-circle"></i>
+                                <span>No hay productos con stock bajo</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts y datos - Fila principal -->
+    <div class="charts-row mb-5">
         <!-- Gráfica de ventas -->
-        <div class="col-lg-8">
-            <div class="card-modern">
-                <div class="card-header-custom">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                        <div>
-                            <h5 class="mb-1 fw-bold">📊 Ventas de la semana</h5>
-                            <p class="text-muted small mb-0">Comparativa de ventas diarias</p>
-                        </div>
-                        <span class="badge rounded-pill text-bg-warning">Últimos 7 días</span>
+        <div class="chart-card large">
+            <div class="card-modern elevated">
+                <div class="card-header">
+                    <div class="card-header-content">
+                        <h3 class="card-title">
+                            <i class="bi bi-graph-up"></i>
+                            Ventas de la semana
+                        </h3>
+                        <p class="card-subtitle">Comparativa de ventas diarias (últimos 7 días)</p>
                     </div>
+                    <span class="badge-modern primary">
+                        <i class="bi bi-calendar"></i>
+                        Últimos 7 días
+                    </span>
                 </div>
-                <div class="card-body-custom">
-                    <canvas id="salesChart" height="300"></canvas>
+                <div class="card-body">
+                    <canvas id="salesChart" height="80"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Productos más vendidos -->
-        <div class="col-lg-4">
-            <div class="card-modern">
-                <div class="card-header-custom">
-                    <h5 class="mb-1 fw-bold">🏆 Top productos</h5>
-                    <p class="text-muted small mb-0">Los más vendidos (pedidos completados)</p>
+        <div class="chart-card small">
+            <div class="card-modern elevated">
+                <div class="card-header">
+                    <div class="card-header-content">
+                        <h3 class="card-title">
+                            <i class="bi bi-fire"></i>
+                            Top productos
+                        </h3>
+                        <p class="card-subtitle">Los más vendidos hoy</p>
+                    </div>
                 </div>
-                <div class="card-body-custom">
-                    <div class="top-products-list">
-                        {% if top_productos_dashboard %}
+                <div class="card-body p-0">
+                    {% if top_productos_dashboard %}
+                        <div class="products-list">
                             {% for prod in top_productos_dashboard %}
-                            <div class="product-item">
-                                <div class="product-rank {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">{{ loop.index }}</div>
-                                <div class="product-info">
+                            <div class="product-rank-item rank-{{ loop.index|min(3) }}">
+                                <div class="rank-badge">
+                                    {{ loop.index }}
+                                    {% if loop.index == 1 %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="product-details">
                                     <div class="product-name">{{ prod.nombre }}</div>
-                                    <div class="product-stats">{{ prod.cantidad|int }} unidades · ${{ '%.2f'|format(prod.monto or 0) }}</div>
+                                    <div class="product-metrics">
+                                        {{ prod.cantidad|int }} unidades · ${{ '%.2f'|format(prod.monto or 0) }}
+                                    </div>
                                 </div>
                             </div>
                             {% endfor %}
-                        {% else %}
-                            <div class="text-muted">Sin ventas registradas aún.</div>
-                        {% endif %}
-                    </div>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>Sin ventas registradas</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Segunda fila de gráficas -->
-    <div class="row g-4 mb-5">
-        <!-- Ventas por categoría -->
-        <div class="col-md-6">
-            <div class="card-modern">
-                <div class="card-header-custom">
-                    <h5 class="mb-1 fw-bold">🥘 Presentaciones más vendidas</h5>
-                    <p class="text-muted small mb-0">Distribución por presentación</p>
+    <!-- Gráficas secundarias -->
+    <div class="charts-row mb-5">
+        <!-- Ventas por presentación -->
+        <div class="chart-card small">
+            <div class="card-modern elevated">
+                <div class="card-header">
+                    <div class="card-header-content">
+                        <h3 class="card-title">
+                            <i class="bi bi-pie-chart"></i>
+                            Presentaciones
+                        </h3>
+                        <p class="card-subtitle">Distribución de ventas</p>
+                    </div>
                 </div>
-                <div class="card-body-custom">
-                    <canvas id="categoryChart" height="250"></canvas>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="150"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Actividad reciente -->
-        <div class="col-md-6">
-            <div class="card-modern">
-                <div class="card-header-custom">
-                    <h5 class="mb-1 fw-bold">🕐 Actividad reciente</h5>
-                    <p class="text-muted small mb-0">Últimos pedidos completados</p>
+        <div class="chart-card large">
+            <div class="card-modern elevated">
+                <div class="card-header">
+                    <div class="card-header-content">
+                        <h3 class="card-title">
+                            <i class="bi bi-clock-history"></i>
+                            Actividad reciente
+                        </h3>
+                        <p class="card-subtitle">Últimos pedidos completados</p>
+                    </div>
                 </div>
-                <div class="card-body-custom p-0">
-                    <div class="activity-timeline">
-                        {% if actividad_reciente %}
+                <div class="card-body p-0">
+                    {% if actividad_reciente %}
+                    <div class="timeline">
                         {% for item in actividad_reciente %}
-                        <div class="activity-item">
-                            <div class="activity-icon bg-success">
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
                                 <i class="bi bi-cart-check"></i>
                             </div>
-                            <div class="activity-content">
-                                <div class="activity-text">{{ item.texto }}</div>
-                                <div class="activity-time">{{ item.fecha.strftime('%d/%m/%Y %H:%M') if item.fecha else '' }}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-text">{{ item.texto }}</div>
+                                <div class="timeline-time">{{ item.fecha.strftime('%d/%m/%Y %H:%M') if item.fecha else 'Sin fecha' }}</div>
                             </div>
-                            <div class="activity-amount">${{ '%.2f'|format(item.monto) }}</div>
+                            <div class="timeline-amount">
+                                ${{ '%.2f'|format(item.monto) }}
+                            </div>
                         </div>
                         {% endfor %}
-                        {% else %}
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <div class="activity-text">No hay pedidos completados recientes.</div>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-calendar-x"></i>
+                        <p>No hay pedidos completados recientes</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Acciones rápidas -->
-    <div class="quick-actions">
-        <h5 class="mb-3 fw-bold">⚡ Acciones rápidas</h5>
-        <div class="row g-3">
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('pedidos.index') }}" class="quick-action-btn">
+    <div class="quick-actions-section">
+        <h3 class="section-title">
+            <i class="bi bi-lightning-charge"></i>
+            Acciones rápidas
+        </h3>
+        <div class="quick-actions-grid">
+            <a href="{{ url_for('pedidos.index') }}" class="quick-action-card">
+                <div class="action-icon primary">
                     <i class="bi bi-plus-circle"></i>
-                    <span>Nueva venta</span>
-                </a>
-            </div>
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('pedidos.index') }}" class="quick-action-btn">
+                </div>
+                <div class="action-text">
+                    <span class="action-label">Nueva venta</span>
+                    <p class="action-desc">Crear pedido o venta</p>
+                </div>
+            </a>
+
+            <a href="{{ url_for('pedidos.index') }}" class="quick-action-card">
+                <div class="action-icon success">
                     <i class="bi bi-receipt"></i>
-                    <span>Ver pedidos</span>
-                </a>
-            </div>
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('caja.historial') }}" class="quick-action-btn">
+                </div>
+                <div class="action-text">
+                    <span class="action-label">Ver pedidos</span>
+                    <p class="action-desc">Gestionar pedidos</p>
+                </div>
+            </a>
+
+            <a href="{{ url_for('dashboard.reportes_mongo') }}" class="quick-action-card">
+                <div class="action-icon warning">
                     <i class="bi bi-graph-up"></i>
-                    <span>Reportes</span>
-                </a>
-            </div>
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('ingredientes.index') }}" class="quick-action-btn">
+                </div>
+                <div class="action-text">
+                    <span class="action-label">Reportes</span>
+                    <p class="action-desc">Ver análisis Mongo</p>
+                </div>
+            </a>
+
+            <a href="{{ url_for('ingredientes.index') }}" class="quick-action-card">
+                <div class="action-icon info">
                     <i class="bi bi-box-seam"></i>
-                    <span>Inventario</span>
-                </a>
-            </div>
+                </div>
+                <div class="action-text">
+                    <span class="action-label">Inventario</span>
+                    <p class="action-desc">Gestionar stock</p>
+                </div>
+            </a>
         </div>
     </div>
 </div>
 
-<style>
-    :root {
-        --dash-bg: #f4f6ef;
-        --dash-card: #ffffff;
-        --dash-text: #1f2d20;
-        --dash-muted: #5e6a5f;
-        --dash-border: #d9dfd2;
-        --dash-accent: #d55f2a;
-        --dash-accent-soft: #fff1e7;
-        --dash-dark: #1f3a2f;
-    }
+{% endblock %}
 
-    /* Dashboard styles */
-    .dashboard-container {
-        padding: 8px;
-        color: var(--dash-text);
-        background:
-            radial-gradient(circle at top right, #fce9dc 0%, transparent 35%),
-            radial-gradient(circle at bottom left, #e9f2ea 0%, transparent 30%),
-            var(--dash-bg);
-        border-radius: 20px;
-    }
-
-    .welcome-section {
-        background: linear-gradient(130deg, #203b31 0%, #2f5a45 55%, #3a6a52 100%);
-        border-radius: 22px;
-        padding: 26px;
-        color: #f6f8f2;
-        box-shadow: 0 20px 40px rgba(35, 58, 50, 0.22);
-    }
-
-    .welcome-kicker {
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
-        font-size: 0.74rem;
-        font-weight: 600;
-        color: #f4ca8c;
-    }
-
-    .welcome-title {
-        color: #ffffff;
-    }
-
-    .welcome-subtitle {
-        color: #d9e5dc;
-        font-size: 1rem;
-    }
-
-    /* Tarjetas de estadísticas */
-    .stat-card {
-        background: var(--dash-card);
-        border-radius: 18px;
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid var(--dash-border);
-        box-shadow: 0 10px 26px rgba(34, 45, 33, 0.08);
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: var(--dash-accent);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 16px 32px rgba(34, 45, 33, 0.14);
-    }
-
-    .stat-card-icon {
-        width: 52px;
-        height: 52px;
-        background: var(--dash-accent-soft);
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.6rem;
-    }
-
-    .stat-card-content {
-        flex: 1;
-    }
-
-    .stat-card-title {
-        font-size: 0.85rem;
-        color: var(--dash-muted);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .stat-card-value {
-        font-size: 1.45rem;
-        font-weight: bold;
-        color: var(--dash-text);
-        margin-bottom: 5px;
-        line-height: 1.2;
-    }
-
-    .stat-card-change {
-        font-size: 0.8rem;
-        color: var(--dash-muted);
-    }
-
-    .stat-card-change.positive {
-        color: #10b981;
-    }
-
-    .stat-card-change.negative {
-        color: #ef4444;
-    }
-
-    .stat-card-primary .stat-card-icon { color: #1f3a2f; }
-    .stat-card-success .stat-card-icon { color: #267955; }
-    .stat-card-warning .stat-card-icon { color: #d37a1f; }
-    .stat-card-info .stat-card-icon { color: #2f637f; }
-
-    /* Tarjetas modernas */
-    .card-modern {
-        background: var(--dash-card);
-        border-radius: 18px;
-        overflow: hidden;
-        transition: transform 0.3s ease;
-        border: 1px solid var(--dash-border);
-        box-shadow: 0 10px 26px rgba(34, 45, 33, 0.08);
-    }
-
-    .card-modern:hover {
-        transform: translateY(-3px);
-    }
-
-    .card-header-custom {
-        padding: 18px 22px;
-        border-bottom: 1px solid var(--dash-border);
-        background: #fbfcf8;
-    }
-
-    .card-body-custom {
-        padding: 18px 22px;
-    }
-
-    /* Lista de productos */
-    .top-products-list {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .product-item {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        padding: 10px;
-        background: #f8faf6;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        border: 1px solid #e5ebdd;
-    }
-
-    .product-item:hover {
-        background: #eef5eb;
-        transform: translateX(5px);
-    }
-
-    .product-rank {
-        width: 35px;
-        height: 35px;
-        background: #edf2e7;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 1.1rem;
-    }
-
-    .product-rank.rank-1 { background: #f59e0b; color: white; }
-    .product-rank.rank-2 { background: #64748b; color: white; }
-    .product-rank.rank-3 { background: #cd7f32; color: white; }
-
-    .product-info {
-        flex: 1;
-    }
-
-    .product-name {
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: var(--dash-text);
-    }
-
-    .product-stats {
-        font-size: 0.8rem;
-        color: var(--dash-muted);
-    }
-
-    .product-trend {
-        font-size: 0.85rem;
-    }
-
-    /* Timeline de actividad */
-    .activity-timeline {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .activity-item {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        padding: 15px 20px;
-        border-bottom: 1px solid #ecf0e8;
-        transition: all 0.3s ease;
-    }
-
-    .activity-item:hover {
-        background: #f8faf6;
-    }
-
-    .activity-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        color: white;
-    }
-
-    .activity-content {
-        flex: 1;
-    }
-
-    .activity-text {
-        font-weight: 500;
-        margin-bottom: 3px;
-    }
-
-    .activity-time {
-        font-size: 0.75rem;
-        color: var(--dash-muted);
-    }
-
-    .activity-amount {
-        font-weight: 600;
-        color: #10b981;
-    }
-
-    /* Acciones rápidas */
-    .quick-actions {
-        margin-top: 30px;
-    }
-
-    .quick-action-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        padding: 20px;
-        background: var(--dash-card);
-        border-radius: 15px;
-        text-decoration: none;
-        color: var(--dash-dark);
-        transition: all 0.3s ease;
-        text-align: center;
-        border: 1px solid var(--dash-border);
-        box-shadow: 0 8px 18px rgba(34, 45, 33, 0.06);
-    }
-
-    .quick-action-btn:hover {
-        transform: translateY(-5px);
-        background: linear-gradient(135deg, #f8b25d, #ef8c40);
-        color: white;
-    }
-
-    .quick-action-btn i {
-        font-size: 2rem;
-    }
-
-    /* Fecha y hora */
-    .date-time-card {
-        background: rgba(255,255,255,0.9);
-        padding: 12px 20px;
-        border-radius: 15px;
-        backdrop-filter: blur(6px);
-        color: #1f2d20;
-        border: 1px solid rgba(255,255,255,0.25);
-    }
-
-    .list-group-item {
-        border-color: #e4eadb;
-        background: #fbfdf9;
-    }
-
-    .list-group-item a:hover {
-        background: #f2f8ef;
-    }
-
-    @media (max-width: 768px) {
-        .dashboard-container {
-            padding: 2px;
-            border-radius: 14px;
-        }
-
-        .welcome-section {
-            padding: 18px;
-        }
-
-        .stat-card {
-            padding: 16px;
-        }
-
-        .stat-card-value {
-            font-size: 1.2rem;
-        }
-
-        .quick-action-btn {
-            padding: 14px;
-        }
-    }
-</style>
-
+{% block scripts %} 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Fecha y hora en tiempo real
+    // Update date and time
     function updateDateTime() {
         const now = new Date();
         const dateElement = document.getElementById('currentDate');
         const timeElement = document.getElementById('currentTime');
         
         if (dateElement) {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
             dateElement.textContent = now.toLocaleDateString('es-MX', options);
         }
         
         if (timeElement) {
-            timeElement.textContent = now.toLocaleTimeString('es-MX');
+            timeElement.textContent = now.toLocaleTimeString('es-MX', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
         }
     }
     
     updateDateTime();
-    setInterval(updateDateTime, 1000);
+    setInterval(updateDateTime, 5000);
 
+    // Chart data from backend
     const ventasDiariasLabels = {{ ventas_diarias_labels|tojson }};
     const ventasDiariasData = {{ ventas_diarias_data|tojson }};
     const presentacionesLabels = {{ top_presentaciones_labels|tojson }};
     const presentacionesData = {{ top_presentaciones_data|tojson }};
 
-    // Gráfica de ventas
+    // Sales Chart
     const ctx = document.getElementById('salesChart');
     if (ctx) {
         new Chart(ctx, {
@@ -641,11 +405,16 @@
                 datasets: [{
                     label: 'Ventas diarias',
                     data: ventasDiariasData,
-                    borderColor: '#d55f2a',
-                    backgroundColor: 'rgba(213, 95, 42, 0.14)',
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
                     borderWidth: 3,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
                 }]
             },
             options: {
@@ -653,24 +422,45 @@
                 maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        labels: { color: '#2c3a32' }
+                        display: true,
+                        labels: { 
+                            color: '#374151',
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { weight: 600 }
+                        }
+                    },
+                    filler: {
+                        propagate: true
                     }
                 },
                 scales: {
                     y: {
-                        ticks: { color: '#425246' },
-                        grid: { color: '#e4eadf' }
+                        ticks: { 
+                            color: '#6b7280',
+                            font: { weight: 500 }
+                        },
+                        grid: { 
+                            color: 'rgba(219, 224, 231, 0.5)',
+                            drawBorder: false
+                        }
                     },
                     x: {
-                        ticks: { color: '#425246' },
-                        grid: { color: '#e4eadf' }
+                        ticks: { 
+                            color: '#6b7280',
+                            font: { weight: 500 }
+                        },
+                        grid: { 
+                            color: 'rgba(219, 224, 231, 0.5)',
+                            drawBorder: false
+                        }
                     }
                 }
             }
         });
     }
 
-    // Gráfica de categorías
+    // Presentations Chart
     const categoryCtx = document.getElementById('categoryChart');
     if (categoryCtx) {
         new Chart(categoryCtx, {
@@ -679,8 +469,15 @@
                 labels: presentacionesLabels,
                 datasets: [{
                     data: presentacionesData,
-                    backgroundColor: ['#e63939', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'],
-                    borderWidth: 0
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#f093fb',
+                        '#4facfe',
+                        '#00f2fe'
+                    ],
+                    borderColor: 'white',
+                    borderWidth: 2
                 }]
             },
             options: {
@@ -689,7 +486,12 @@
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { color: '#2c3a32' }
+                        labels: { 
+                            color: '#374151',
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { weight: 600 }
+                        }
                     }
                 }
             }

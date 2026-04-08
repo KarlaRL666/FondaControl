@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}Materias Primas{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='style/pages/tienda.css') }}" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+    .materias-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        color: #8B7355;
+        font-weight: 700;
+    }
+
+    .page-header p {
+        color: #666;
+        font-size: 1rem;
+    }
+
+    /* FILTROS */
+    .filtros-section {
+        background: rgba(139, 115, 85, 0.1);
+        border: 1px solid rgba(139, 115, 85, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .filtros-section label {
+        font-weight: 600;
+        color: #8B7355;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .filtros-section select {
+        padding: 0.7rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        background-color: #fff;
+        cursor: pointer;
+        min-width: 200px;
+        color: #333;
+    }
+
+    .filtros-section select:focus {
+        outline: none;
+        border-color: #8B7355;
+        box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
+    }
+
+    .filtros-section button {
+        padding: 0.7rem 1.5rem;
+        background: #8B7355;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s ease;
+    }
+
+    .filtros-section button:hover {
+        background: #6B5344;
+    }
+
+    /* GRID CARDS */
+    .materias-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .materia-card {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .materia-card:hover {
+        border-color: #8B7355;
+        box-shadow: 0 8px 20px rgba(139, 115, 85, 0.15);
+        transform: translateY(-4px);
+    }
+
+    .materia-header {
+        background: linear-gradient(135deg, #6B5344 0%, #8B7355 100%);
+        color: #fff;
+        padding: 1.2rem;
+        border-bottom: 3px solid #f8c44f;
+    }
+
+    .materia-header h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .materia-category {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+
+    .materia-content {
+        padding: 1.2rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .materia-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: #999;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.3rem;
+    }
+
+    .info-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #8B7355;
+    }
+
+    .materia-stock {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
+
+    .stock-actual {
+        background: rgba(139, 115, 85, 0.1);
+        color: #8B7355;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        flex: 1;
+        text-align: center;
+    }
+
+    .stock-minimo {
+        background: rgba(247, 196, 79, 0.15);
+        color: #f8c44f;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        flex: 1;
+        text-align: center;
+    }
+
+    .materia-price {
+        background: linear-gradient(135deg, rgba(139, 115, 85, 0.08), rgba(255, 193, 7, 0.08));
+        padding: 0.8rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        text-align: center;
+        border-left: 3px solid #8B7355;
+    }
+
+    .materia-price .label {
+        font-size: 0.75rem;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .materia-price .value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #8B7355;
+    }
+
+    .materia-footer {
+        display: flex;
+        gap: 0.8rem;
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .footer-item {
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    .footer-label {
+        font-size: 0.75rem;
+        color: #999;
+        display: block;
+    }
+
+    .footer-value {
+        font-weight: 600;
+        color: #8B7355;
+        margin-top: 0.2rem;
+    }
+
+    /* ESTADO DEL FILTRO */
+    .filter-status {
+        text-align: center;
+        padding: 1rem;
+        background: rgba(139, 115, 85, 0.05);
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        color: #8B7355;
+        font-weight: 500;
+    }
+
+    /* VACÍO */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        background: rgba(139, 115, 85, 0.05);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #ccc;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        color: #8B7355;
+        font-size: 1.3rem;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .empty-state p {
+        color: #999;
+        margin: 0;
+    }
+
+    @media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 1.8rem;
+        }
+
+        .filtros-section {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filtros-section select,
+        .filtros-section button {
+            width: 100%;
+        }
+
+        .materias-grid {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        }
+
+        .materia-info {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="materias-container">
+    <div class="page-header">
+        <h1>📦 Materias Primas</h1>
+        <p>Explora nuestro catálogo de ingredientes y materias primas disponibles</p>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filtros-section">
+        <label for="categoria-filter">Filtrar por Categoría:</label>
+        <select id="categoria-filter" onchange="filtrarCategoria()">
+            <option value="">Todas las categorías</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if categoria_seleccionada == cat.id %}selected{% endif %}>
+                {{ cat.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+        <button onclick="resetFiltro()">🔄 Limpiar Filtro</button>
+    </div>
+
+    {% if categoria_seleccionada %}
+    <div class="filter-status">
+        Mostrando materias primas filtradas por categoría
+        <a href="{{ url_for('tienda.materias_primas') }}" style="margin-left: 1rem; text-decoration: none; color: #8B7355; font-weight: 700;">Ver todas →</a>
+    </div>
+    {% endif %}
+
+    <!-- GRID DE MATERIAS PRIMAS -->
+    {% if materias_primas %}
+    <div class="materias-grid">
+        {% for materia in materias_primas %}
+        <div class="materia-card">
+            <div class="materia-header">
+                <h3>{{ materia.nombre }}</h3>
+                <span class="materia-category">{{ materia.categoria }}</span>
+            </div>
+
+            <div class="materia-content">
+                <!-- INFORMACIÓN BÁSICA -->
+                <div class="materia-info">
+                    <div class="info-item">
+                        <span class="info-label">Unidad</span>
+                        <span class="info-value">{{ materia.unidad_medida }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Merma %</span>
+                        <span class="info-value">{{ "%.2f" | format(materia.porcentaje_merma) }}%</span>
+                    </div>
+                </div>
+
+                <!-- STOCK -->
+                <div class="materia-stock">
+                    <div class="stock-actual">
+                        <strong>Stock Actual</strong><br>
+                        {% if materia.stock_convertido_gr %}
+                            {{ "%.0f" | format(materia.stock_actual_gr) }} gr
+                            <br><small>{{ "%.2f" | format(materia.stock_actual) }} kg base</small>
+                        {% else %}
+                            {{ "%.2f" | format(materia.stock_actual) }} {{ materia.unidad_medida }}
+                        {% endif %}
+                    </div>
+                    <div class="stock-minimo">
+                        <strong>Stock Mínimo</strong><br>
+                        {% if materia.stock_convertido_gr %}
+                            {{ "%.0f" | format(materia.stock_minimo_gr) }} gr
+                            <br><small>{{ "%.2f" | format(materia.stock_minimo) }} kg base</small>
+                        {% else %}
+                            {{ "%.2f" | format(materia.stock_minimo) }} {{ materia.unidad_medida }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- PRECIO -->
+                <div class="materia-price">
+                    <div class="label">Precio Unitario</div>
+                    <div class="value">${{ "%.2f" | format(materia.precio) }}</div>
+                </div>
+
+                <!-- PIE DE PÁGINA -->
+                <div class="materia-footer">
+                    <div class="footer-item">
+                        <span class="footer-label">Proveedor</span>
+                        <span class="footer-value">{{ materia.proveedor }}</span>
+                    </div>
+                    <div class="footer-item">
+                        <span class="footer-label">Factor Conv.</span>
+                        <span class="footer-value">{{ "%.2f" | format(materia.factor_conversion) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h3>No hay materias primas disponibles</h3>
+        <p>
+            {% if categoria_seleccionada %}
+                No se encontraron materias primas en esta categoría. 
+                <a href="{{ url_for('tienda.materias_primas') }}" style="color: #8B7355; text-decoration: none; font-weight: 600;">Ver todas →</a>
+            {% else %}
+                No hay materias primas registradas en el sistema.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function filtrarCategoria() {
+    const select = document.getElementById('categoria-filter');
+    const categoriaId = select.value;
+    
+    if (categoriaId) {
+        window.location.href = "{{ url_for('tienda.materias_primas') }}?categoria=" + categoriaId;
+    } else {
+        window.location.href = "{{ url_for('tienda.materias_primas') }}";
+    }
+}
+
+function resetFiltro() {
+    window.location.href = "{{ url_for('tienda.materias_primas') }}";
+}
+</script>
+{% endblock %}

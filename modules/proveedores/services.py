@@ -5,9 +5,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _leer_valor(form_like, field_name):
+    campo = getattr(form_like, field_name, None)
+    if campo is not None and hasattr(campo, 'data'):
+        return campo.data
+    if hasattr(form_like, 'get'):
+        return form_like.get(field_name)
+    return None
+
+
 def _obtener_o_crear_categoria(form_like):
-    usar_nueva = str(form_like.get('usar_categoria_nueva', '')).lower() in ('1', 'true', 'on', 'yes')
-    nombre_nueva = (form_like.get('nombre_nueva_categoria') or '').strip()
+    usar_nueva = str(_leer_valor(form_like, 'usar_categoria_nueva') or '').lower() in ('1', 'true', 'on', 'yes')
+    nombre_nueva = (_leer_valor(form_like, 'nombre_nueva_categoria') or '').strip()
 
     if usar_nueva and nombre_nueva:
         categoria = CategoriaProveedor.query.filter(db.func.lower(CategoriaProveedor.nombre) == nombre_nueva.lower()).first()
@@ -23,7 +32,7 @@ def _obtener_o_crear_categoria(form_like):
 
         return categoria.id_categoria_proveedor, None
 
-    categoria_id = form_like.get('id_categoria_proveedor')
+    categoria_id = _leer_valor(form_like, 'id_categoria_proveedor')
     if not categoria_id:
         return None, "Categoría de proveedor no válida"
 
@@ -222,16 +231,16 @@ def actualizar_proveedor(id_proveedor, form):
         if error_categoria:
             return False, error_categoria
 
-        proveedor.persona.nombre = form.get('nombre')
-        proveedor.persona.apellido_p = form.get('apellido_p')
-        proveedor.persona.apellido_m = form.get('apellido_m')
-        proveedor.persona.telefono = form.get('telefono') or None
-        proveedor.persona.correo = form.get('correo') or None
-        proveedor.persona.direccion = form.get('direccion') or None
+        proveedor.persona.nombre = _leer_valor(form, 'nombre')
+        proveedor.persona.apellido_p = _leer_valor(form, 'apellido_p')
+        proveedor.persona.apellido_m = _leer_valor(form, 'apellido_m')
+        proveedor.persona.telefono = _leer_valor(form, 'telefono') or None
+        proveedor.persona.correo = _leer_valor(form, 'correo') or None
+        proveedor.persona.direccion = _leer_valor(form, 'direccion') or None
         proveedor.id_categoria_proveedor = int(categoria_id)
 
         db.session.commit()
-        logger.info(f"Proveedor actualizado: {form.get('nombre')}")
+        logger.info(f"Proveedor actualizado: {_leer_valor(form, 'nombre')}")
         return True, "Proveedor actualizado"
 
     except Exception as e:

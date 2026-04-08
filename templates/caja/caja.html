@@ -2,85 +2,163 @@
 {% block title %}Control de Caja{% endblock %}
 {% block content %}
 <style>
+    * {
+        --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     .caja-shell {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 24px;
+        padding: 0 16px 32px 16px;
+        animation: fadeInUp 0.5s ease;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .caja-hero {
-        background: linear-gradient(135deg, #17324d 0%, #244f79 55%, #3270a8 100%);
+           background: linear-gradient(135deg, #6B5344 0%, #8B7355 55%, #FF9800 100%);
         color: #fff;
         border-radius: 16px;
-        padding: 18px;
-        box-shadow: 0 14px 30px rgba(23, 50, 77, 0.26);
+        padding: 24px;
+        box-shadow: 0 16px 40px rgba(23, 50, 77, 0.25);
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        gap: 14px;
+        align-items: flex-start;
+        gap: 16px;
         flex-wrap: wrap;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .caja-hero::before {
+        content: '';
+        position: absolute;
+        right: -100px;
+        top: -100px;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        pointer-events: none;
     }
 
     .caja-hero h1 {
-        margin: 0 0 6px 0;
-        font-size: 1.7rem;
-        font-weight: 700;
-        letter-spacing: 0.2px;
+        margin: 0 0 8px 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+        position: relative;
+        z-index: 1;
     }
 
     .caja-hero p {
         margin: 0;
-        opacity: 0.9;
+        opacity: 0.92;
+        line-height: 1.4;
+        position: relative;
+        z-index: 1;
     }
 
     .caja-filtro {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
     }
 
     .caja-filtro input[type="date"] {
         min-width: 180px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 0.9rem;
+    }
+
+    .caja-filtro input[type="date"]::placeholder {
+        color: rgba(255, 255, 255, 0.5);
     }
 
     .kpi-grid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(170px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 14px;
     }
 
     .kpi-card {
         border-radius: 14px;
-        padding: 14px;
+        padding: 18px;
         color: #fff;
-        box-shadow: 0 10px 24px rgba(24, 28, 37, 0.14);
+        box-shadow: 0 12px 28px rgba(24, 28, 37, 0.12);
+        transition: var(--transition);
+        cursor: default;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -100px;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 40px rgba(24, 28, 37, 0.18);
+    }
+
+    .kpi-card > * {
+        position: relative;
+        z-index: 1;
     }
 
     .kpi-card h3 {
-        margin: 0;
+        margin: 0 0 6px 0;
         font-size: 0.95rem;
-        font-weight: 600;
-        opacity: 0.95;
+        font-weight: 700;
+        opacity: 0.96;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
     }
 
     .kpi-card .value {
-        margin: 8px 0 2px;
-        font-size: 1.5rem;
-        font-weight: 700;
+        margin: 10px 0 4px;
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1.1;
     }
 
     .kpi-card p {
         margin: 0;
         font-size: 0.82rem;
-        opacity: 0.92;
+        opacity: 0.88;
+        line-height: 1.3;
     }
 
-    .kpi-ventas { background: linear-gradient(140deg, #19713f, #2b9d61); }
-    .kpi-efectivo { background: linear-gradient(140deg, #2f6fb0, #4f8fcd); }
-    .kpi-tarjeta { background: linear-gradient(140deg, #b98508, #e3ad2d); color: #2f2500; }
-    .kpi-egresos { background: linear-gradient(140deg, #8a3b22, #b65b3f); }
-    .kpi-utilidad { background: linear-gradient(140deg, #5f2fa8, #7d46d0); }
+    .kpi-ventas { background: linear-gradient(140deg, #8B7355, #FF9800); }
+    .kpi-efectivo { background: linear-gradient(140deg, #FF9800, #FFC107); }
+    .kpi-tarjeta { background: linear-gradient(140deg, #FFC107, #FFD54F); color: #3a3a3a; }
+    .kpi-egresos { background: linear-gradient(140deg, #6B5344, #8B7355); }
+    .kpi-utilidad { background: linear-gradient(140deg, #FF9800, #FF7043); }
 
     .caja-grid {
         display: grid;
@@ -94,80 +172,105 @@
         border: 1px solid #e5ecf2;
         overflow: hidden;
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        transition: var(--transition);
+    }
+
+    .section-card:hover {
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
     }
 
     .section-head {
-        padding: 12px 14px;
+        padding: 16px 18px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 10px;
-        background: #f5f8fc;
+        background: linear-gradient(135deg, #f8fafc 0%, #f5f8fc 100%);
         border-bottom: 1px solid #e6edf5;
+        font-weight: 600;
     }
 
     .section-head h2,
     .section-head h3 {
         margin: 0;
         font-size: 1rem;
+        color: #0f172a;
+        letter-spacing: -0.2px;
     }
 
     .section-body {
-        padding: 12px;
+        padding: 16px;
     }
 
     .badge-flow {
-        padding: 4px 10px;
+        padding: 6px 12px;
         border-radius: 999px;
         font-size: 0.78rem;
-        font-weight: 600;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        transition: var(--transition);
+    }
+
+    .badge-flow:hover {
+        transform: scale(1.05);
     }
 
     .badge-in {
-        background: #dff7e9;
-        color: #19653f;
+        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(25, 135, 84, 0.05) 100%);
+        color: #165b2e;
+        border: 1px solid rgba(25, 135, 84, 0.2);
     }
 
     .badge-out {
-        background: #fde7df;
-        color: #8f2f18;
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(220, 53, 69, 0.05) 100%);
+        color: #842029;
+        border: 1px solid rgba(220, 53, 69, 0.2);
     }
 
     .text-in {
-        color: #19653f;
-        font-weight: 700;
+        color: #165b2e;
+        font-weight: 800;
     }
 
     .text-out {
-        color: #8f2f18;
-        font-weight: 700;
+        color: #842029;
+        font-weight: 800;
     }
 
     .split-bars {
         display: grid;
-        gap: 12px;
+        gap: 14px;
     }
 
     .split-row {
         display: grid;
-        gap: 6px;
+        gap: 8px;
+    }
+
+    .split-row > strong {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 0.95rem;
     }
 
     .split-track {
-        height: 10px;
+        height: 12px;
         border-radius: 999px;
         background: #e9eef5;
         overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .split-fill {
         height: 100%;
         border-radius: 999px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .fill-efectivo { background: #2b9d61; }
-    .fill-tarjeta { background: #2f6fb0; }
-    .fill-transferencia { background: #e3ad2d; }
+    .fill-efectivo { background: linear-gradient(90deg, #8B7355, #FF9800); }
+    .fill-tarjeta { background: linear-gradient(90deg, #FF9800, #FFC107); }
+    .fill-transferencia { background: linear-gradient(90deg, #b98508, #e3ad2d); }
 
     .table-tight th,
     .table-tight td {
@@ -179,6 +282,52 @@
         margin-top: 8px;
         font-size: 0.85rem;
         opacity: 0.95;
+    }
+
+    .turno-pill {
+        margin-top: 10px;
+        display: inline-flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 6px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        background: rgba(255, 255, 255, 0.14);
+        font-size: 0.78rem;
+        color: #fff;
+    }
+
+    .caja-filtro .btn-primary,
+    .caja-filtro .btn-secondary {
+        border: none;
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-weight: 700;
+        box-shadow: 0 8px 20px rgba(24, 28, 37, 0.18);
+        transition: var(--transition);
+    }
+
+    .caja-filtro .btn-primary {
+        background: linear-gradient(140deg, #ffb74d, #ff8a65);
+        color: #1c1b1b;
+    }
+
+    .caja-filtro .btn-primary:hover,
+    .caja-filtro .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(24, 28, 37, 0.24);
+    }
+
+    .caja-filtro button:disabled {
+        opacity: 0.6;
+        filter: grayscale(0.2);
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .caja-filtro .btn-secondary {
+        background: rgba(255, 255, 255, 0.88);
+        color: #3f2f21;
     }
 
     .status-open {
@@ -228,6 +377,10 @@
         <div>
             <h1>Control de Caja</h1>
             <p>Resumen financiero diario con ingresos y salidas en una sola vista.</p>
+            <div class="turno-pill">
+                <span>Turno programado: {{ turno_inicio_txt }} - {{ turno_cierre_txt }}</span>
+                <span>Inicio real: {{ turno_inicio_real_txt }}</span>
+            </div>
             <div class="caja-status">
                 {% if caja_abierta %}
                     <span class="status-open">Caja abierta #{{ caja_abierta.id_caja }} | Inicial: ${{ '%.2f'|format(caja_abierta.monto_inicial or 0) }}</span>
@@ -237,17 +390,23 @@
             </div>
         </div>
         <div class="caja-filtro">
-            <form method="GET" action="{{ url_for('caja.index') }}" class="caja-filtro">
-                <input type="date" id="fechaCaja" name="fecha" class="search" value="{{ fecha_referencia.strftime('%Y-%m-%d') }}">
-                <button type="submit" class="btn-secondary">Consultar</button>
-            </form>
+            <span class="badge bg-light text-dark border">Movimientos de hoy: {{ fecha_referencia.strftime('%d/%m/%Y') }}</span>
             {% if not caja_abierta %}
             <form method="POST" action="{{ url_for('caja.abrir_caja') }}" class="open-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="number" name="monto_inicial" step="0.01" class="search" value="{{ '%.2f'|format(monto_sugerido_apertura) }}" min="0">
+                <input type="number" name="monto_inicial" step="0.01" class="search" value="{{ '%.2f'|format(monto_sugerido_apertura) }}" min="0" required placeholder="Monto inicial">
+                <input type="password" name="password_actual" class="search" placeholder="Contraseña actual" required>
                 <button type="submit" class="btn-primary">Abrir caja</button>
             </form>
             {% endif %}
+            <button
+                type="button"
+                class="btn-primary"
+                onclick="window.location.href='{{ url_for('caja.pedidos_completados') }}'"
+                title="Procesar pagos de pedidos completados"
+            >
+                💳 Procesar Pagos
+            </button>
             <button
                 type="button"
                 class="btn-primary"
@@ -387,7 +546,7 @@
                                 <td>{{ (compra.fecha_entrega or compra.fecha).strftime('%H:%M') if (compra.fecha_entrega or compra.fecha) else '' }}</td>
                                 <td>{{ compra.proveedor.persona.nombre if compra.proveedor and compra.proveedor.persona else 'Proveedor' }}</td>
                                 <td>{{ compra.usuario.username if compra.usuario else 'N/D' }}</td>
-                                <td class="text-out">-${{ '%.2f'|format(compra.total) }}</td>
+                                <td class="text-out">${{ '%.2f'|format((compra.total or 0)|abs) }}</td>
                             </tr>
                             {% else %}
                             <tr>

@@ -5,6 +5,13 @@
 
 <h1 class="section-title">Compra #{{ compra.id }}</h1>
 
+<div class="card mb-3">
+    <p><strong>Avance de entrega:</strong> {{ compra.lineas_recibidas }} de {{ compra.lineas_totales }} líneas ({{ '%.0f'|format(compra.porcentaje_entrega) }}%)</p>
+    <div class="progress" style="height: 14px;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: {{ compra.porcentaje_entrega }}%;" aria-valuenow="{{ compra.porcentaje_entrega }}" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+</div>
+
 <form method="POST" action="{{ url_for('compras.actualizar', id=compra.id) }}">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -22,13 +29,6 @@
             </option>
         {% endfor %}
     </select>
-
-    <p><strong>Método de pago:</strong></p>
-    <select name="metodo_pago">
-        <option value="Efectivo" {% if compra.metodo_pago == 'Efectivo' %}selected{% endif %}>Efectivo</option>
-        <option value="Tarjeta" {% if compra.metodo_pago == 'Tarjeta' %}selected{% endif %}>Tarjeta</option>
-        <option value="Transferencia" {% if compra.metodo_pago == 'Transferencia' %}selected{% endif %}>Transferencia</option>
-    </select>
 </div>
 
 <div class="pedidos-wrapper">
@@ -40,15 +40,22 @@
                 <th>Stock Actual</th>
                 <th>Precio Unitario</th>
                 <th>Subtotal</th>
+                <th>Estado línea</th>
                 <th>Acción</th>
             </tr>
         </thead>
 
         <tbody>
 {% for m in compra.materias_primas %}
-<tr>
+<tr class="js-compra-row" data-id-detalle="{{ m.id_detalle }}">
     <td>{{ m.nombre }}</td>
-    <td>{{ m.cantidad }}</td>
+    <td>
+        {% if current_user.id_rol == 1 and compra.estado != 'Completada' and not m.recibido %}
+            <input type="number" step="0.01" min="0.01" name="cantidad_{{ m.id_detalle }}" value="{{ m.cantidad }}" class="js-cantidad-input" data-id-detalle="{{ m.id_detalle }}">
+        {% else %}
+            <span class="js-cantidad-value" data-id-detalle="{{ m.id_detalle }}" data-value="{{ m.cantidad }}">{{ m.cantidad }}</span>
+        {% endif %}
+    </td>
 
     <td>
         <span class="{% if m.stock_actual < m.cantidad %}text-danger{% else %}text-success{% endif %}">
@@ -59,18 +66,39 @@
     <td>
         <input type="number" step="0.01"
                name="precio_{{ m.id_detalle }}"
-               value="{{ m.precio_unitario }}">
+               value="{{ m.precio_unitario }}"
+               class="js-precio-input"
+               data-id-detalle="{{ m.id_detalle }}">
+    </td>
+
+    <td class="js-subtotal-cell" data-id-detalle="{{ m.id_detalle }}" data-subtotal="{{ '%.2f'|format(m.subtotal or (m.cantidad * m.precio_unitario)) }}">
+        $<span class="js-subtotal-value">{{ '%.2f'|format(m.subtotal or (m.cantidad * m.precio_unitario)) }}</span>
     </td>
 
     <td>
-        ${{ '%.2f'|format(m.subtotal or (m.cantidad * m.precio_unitario)) }}
-    </td>
-
-    <td>
-        {% if compra.estado != 'Completada' %}
-        <button type="submit" class="btn btn-success" formaction="{{ url_for('compras.completar', id=compra.id) }}" formmethod="POST">Completar</button>
+        {% if m.recibido %}
+            <span class="badge bg-success">Recibido</span>
         {% else %}
+            <span class="badge bg-warning text-dark">Pendiente</span>
+        {% endif %}
+    </td>
+
+    <td>
+        {% if compra.estado != 'Completada' and not m.recibido %}
+            <button
+                    type="button"
+                    class="btn btn-success btn-recibir-linea"
+                    data-id-detalle="{{ m.id_detalle }}"
+                    data-nombre="{{ m.nombre }}"
+                    data-cantidad="{{ m.cantidad }}"
+                    data-precio="{{ m.precio_unitario or 0 }}"
+                    data-url="{{ url_for('compras.recibir_detalle', id_compra=compra.id, id_detalle=m.id_detalle) }}">
+                Recibir línea
+            </button>
+        {% elif m.recibido %}
             <span class="text-success">✔ Recibido</span>
+        {% else %}
+            <span class="text-muted">Cerrado</span>
         {% endif %}
     </td>
 </tr>
@@ -79,16 +107,275 @@
         <tfoot>
             <tr>
                 <th colspan="4" class="text-end">Total</th>
-                <th>${{ '%.2f'|format(compra.total) }}</th>
+                <th>$<span id="totalCompraDisplay">{{ '%.2f'|format(compra.total) }}</span></th>
+                <th></th>
                 <th></th>
             </tr>
         </tfoot>
     </table>
 </div>
 
-<button type="submit" class="btn btn-success mt-3">Guardar cambios</button>
+<div class="d-flex gap-2 mt-3 flex-wrap">
+    <button type="submit" class="btn btn-success">Guardar cambios</button>
+    {% if compra.estado not in ['Completada', 'Completado', 'Cancelado'] %}
+    <button type="submit"
+            class="btn btn-primary"
+            formaction="{{ url_for('compras.completar', id=compra.id) }}"
+            formmethod="POST">
+        Completar compra
+    </button>
+    {% endif %}
+    <a href="{{ url_for('compras.index') }}" class="btn btn-secondary">Volver</a>
+</div>
 </form>
 
-<a href="{{ url_for('compras.index') }}" class="btn btn-secondary mt-3">Volver</a>
+<div class="modal fade" id="modalRecibirLinea" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formRecibirLinea">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="fecha_entrega" id="modal_fecha_entrega">
+                <input type="hidden" name="id_proveedor" id="modal_id_proveedor">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Recibir línea de compra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="mb-2"><strong>Ingrediente:</strong> <span id="modal_nombre_materia">-</span></p>
+                    <p class="mb-3 text-muted">Si no alcanza el efectivo, reduce la cantidad y vuelve a intentar.</p>
+
+                    <label class="form-label" for="cantidad_recibir">Cantidad a recibir</label>
+                    <input type="number" class="form-control mb-3" id="cantidad_recibir" name="cantidad_recibir" min="0.01" step="0.01" required>
+
+                    <label class="form-label" for="metodo_pago_linea">Método de pago</label>
+                    <select class="form-select" id="metodo_pago_linea" name="metodo_pago" required>
+                        <option value="Efectivo" {% if compra.metodo_pago == 'Efectivo' %}selected{% endif %}>Efectivo</option>
+                        <option value="Tarjeta" {% if compra.metodo_pago == 'Tarjeta' %}selected{% endif %}>Tarjeta</option>
+                        <option value="Transferencia" {% if compra.metodo_pago == 'Transferencia' %}selected{% endif %}>Transferencia</option>
+                    </select>
+
+                    <div id="efectivoDisponibleLinea" class="alert alert-warning mt-3 mb-0" style="display: none;">
+                        {% if caja_abierta %}
+                            <strong>Efectivo disponible en caja:</strong> $<span id="saldoDisponibleTxt">{{ '%.2f'|format(efectivo_disponible or 0) }}</span>
+                        {% else %}
+                            <strong>No hay caja abierta.</strong> Para pagar en efectivo debes abrir caja.
+                        {% endif %}
+                    </div>
+
+                    <div id="resumenCostoLinea" class="alert alert-secondary mt-2 mb-0" style="display: none;">
+                        <div><strong>Costo estimado línea:</strong> $<span id="costoEstimadoTxt">0.00</span></div>
+                        <div><strong>Diferencia contra caja:</strong> $<span id="diferenciaCajaTxt">0.00</span></div>
+                    </div>
+
+                    <div id="tarjetaFieldsLinea" style="display: none; margin-top: 12px;">
+                        <label class="form-label" for="tarjeta_titular_linea">Titular</label>
+                        <input type="text" id="tarjeta_titular_linea" name="tarjeta_titular" class="form-control mb-2" value="{{ compra.tarjeta_titular or '' }}" placeholder="Nombre del titular">
+
+                        <label class="form-label" for="numero_tarjeta_linea">Número de tarjeta</label>
+                        <input type="text" id="numero_tarjeta_linea" name="numero_tarjeta" class="form-control mb-2" placeholder="1234123412341234" inputmode="numeric" autocomplete="off">
+
+                        <label class="form-label" for="tarjeta_vencimiento_linea">Vencimiento (MM/AA)</label>
+                        <input type="text" id="tarjeta_vencimiento_linea" name="tarjeta_vencimiento" class="form-control mb-2" value="{{ compra.tarjeta_vencimiento or '' }}" placeholder="MM/AA" inputmode="numeric" autocomplete="off">
+
+                        <label class="form-label" for="tarjeta_cvv_linea">CVV</label>
+                        <input type="password" id="tarjeta_cvv_linea" name="tarjeta_cvv" class="form-control" placeholder="CVV" inputmode="numeric" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar recepción y pago</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('compras.guardar_pago', id=compra.id) }}" class="mt-4">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="card mb-4">
+    <p><strong>Método de pago (guardar después de crear compra):</strong></p>
+    <select id="metodoPagoCompra" name="metodo_pago">
+        <option value="Efectivo" {% if compra.metodo_pago == 'Efectivo' %}selected{% endif %}>Efectivo</option>
+        <option value="Tarjeta" {% if compra.metodo_pago == 'Tarjeta' %}selected{% endif %}>Tarjeta</option>
+        <option value="Transferencia" {% if compra.metodo_pago == 'Transferencia' %}selected{% endif %}>Transferencia</option>
+    </select>
+
+    <div id="tarjetaFieldsCompra" style="display: none; margin-top: 12px;">
+        <p class="mb-2"><strong>Datos de tarjeta</strong></p>
+        <input type="text" name="tarjeta_titular" placeholder="Nombre del titular" value="{{ compra.tarjeta_titular or '' }}" class="mb-2">
+        <input type="text" name="numero_tarjeta" placeholder="Número de tarjeta" class="mb-2" inputmode="numeric" autocomplete="off">
+        <input type="text" name="tarjeta_vencimiento" placeholder="MM/AA" value="{{ compra.tarjeta_vencimiento or '' }}" class="mb-2" inputmode="numeric" autocomplete="off">
+        <input type="password" name="tarjeta_cvv" placeholder="CVV" class="mb-2" inputmode="numeric" autocomplete="off">
+        {% if compra.tarjeta_ultimos4 %}
+        <small class="text-muted d-block">Tarjeta guardada terminación: ****{{ compra.tarjeta_ultimos4 }}</small>
+        {% endif %}
+    </div>
+
+    <div class="d-flex gap-2 mt-3 flex-wrap">
+        <button type="submit" class="btn btn-primary">Guardar método de pago</button>
+    </div>
+</div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const metodo = document.getElementById('metodoPagoCompra');
+    const tarjetaFields = document.getElementById('tarjetaFieldsCompra');
+    if (!metodo || !tarjetaFields) return;
+
+    function toggleTarjeta() {
+        tarjetaFields.style.display = metodo.value === 'Tarjeta' ? 'block' : 'none';
+    }
+
+    metodo.addEventListener('change', toggleTarjeta);
+    toggleTarjeta();
+
+    const modalElement = document.getElementById('modalRecibirLinea');
+    const modalForm = document.getElementById('formRecibirLinea');
+    const modalNombre = document.getElementById('modal_nombre_materia');
+    const cantidadInput = document.getElementById('cantidad_recibir');
+    const metodoPagoLinea = document.getElementById('metodo_pago_linea');
+    const tarjetaFieldsLinea = document.getElementById('tarjetaFieldsLinea');
+    const efectivoDisponibleLinea = document.getElementById('efectivoDisponibleLinea');
+    const fechaEntrega = document.querySelector('input[name="fecha_entrega"]');
+    const proveedor = document.querySelector('select[name="id_proveedor"]');
+    const hiddenFecha = document.getElementById('modal_fecha_entrega');
+    const hiddenProveedor = document.getElementById('modal_id_proveedor');
+    const costoEstimadoTxt = document.getElementById('costoEstimadoTxt');
+    const diferenciaCajaTxt = document.getElementById('diferenciaCajaTxt');
+    const resumenCostoLinea = document.getElementById('resumenCostoLinea');
+    const saldoDisponibleTxt = document.getElementById('saldoDisponibleTxt');
+    const totalCompraDisplay = document.getElementById('totalCompraDisplay');
+    let precioUnidadLinea = 0;
+    const saldoDisponible = parseFloat("{{ '%.2f'|format(efectivo_disponible or 0) }}") || 0;
+
+    if (modalElement && modalForm && window.bootstrap) {
+        const modal = new bootstrap.Modal(modalElement);
+        const botones = document.querySelectorAll('.btn-recibir-linea');
+        const filasCompra = document.querySelectorAll('.js-compra-row');
+
+        function toNumber(value) {
+            if (value === null || value === undefined) {
+                return 0;
+            }
+            return parseFloat(String(value).replace(',', '.')) || 0;
+        }
+
+        function getCantidadPorDetalle(idDetalle) {
+            const inputCantidad = document.querySelector(`.js-cantidad-input[data-id-detalle="${idDetalle}"]`);
+            if (inputCantidad) {
+                return toNumber(inputCantidad.value);
+            }
+            const spanCantidad = document.querySelector(`.js-cantidad-value[data-id-detalle="${idDetalle}"]`);
+            return toNumber(spanCantidad ? spanCantidad.dataset.value : 0);
+        }
+
+        function getPrecioPorDetalle(idDetalle) {
+            const inputPrecio = document.querySelector(`.js-precio-input[data-id-detalle="${idDetalle}"]`);
+            return toNumber(inputPrecio ? inputPrecio.value : 0);
+        }
+
+        function recalcularFila(idDetalle) {
+            const subtotalCell = document.querySelector(`.js-subtotal-cell[data-id-detalle="${idDetalle}"]`);
+            if (!subtotalCell) {
+                return;
+            }
+
+            const subtotalValue = subtotalCell.querySelector('.js-subtotal-value');
+            const subtotal = getCantidadPorDetalle(idDetalle) * getPrecioPorDetalle(idDetalle);
+            subtotalCell.dataset.subtotal = subtotal.toFixed(2);
+
+            if (subtotalValue) {
+                subtotalValue.textContent = subtotal.toFixed(2);
+            }
+
+            const btnLinea = document.querySelector(`.btn-recibir-linea[data-id-detalle="${idDetalle}"]`);
+            if (btnLinea) {
+                btnLinea.setAttribute('data-precio', getPrecioPorDetalle(idDetalle).toFixed(2));
+                btnLinea.setAttribute('data-cantidad', getCantidadPorDetalle(idDetalle).toFixed(2));
+            }
+        }
+
+        function recalcularTotalCompra() {
+            if (!totalCompraDisplay) {
+                return;
+            }
+            let total = 0;
+            document.querySelectorAll('.js-subtotal-cell').forEach((cell) => {
+                total += toNumber(cell.dataset.subtotal);
+            });
+            totalCompraDisplay.textContent = total.toFixed(2);
+        }
+
+        function recalcularTodo() {
+            filasCompra.forEach((fila) => {
+                recalcularFila(fila.dataset.idDetalle);
+            });
+            recalcularTotalCompra();
+        }
+
+        function toggleTarjetaLinea() {
+            tarjetaFieldsLinea.style.display = metodoPagoLinea.value === 'Tarjeta' ? 'block' : 'none';
+            if (efectivoDisponibleLinea) {
+                efectivoDisponibleLinea.style.display = metodoPagoLinea.value === 'Efectivo' ? 'block' : 'none';
+            }
+            if (resumenCostoLinea) {
+                resumenCostoLinea.style.display = metodoPagoLinea.value === 'Efectivo' ? 'block' : 'none';
+            }
+            actualizarResumenEfectivo();
+        }
+
+        function actualizarResumenEfectivo() {
+            if (!costoEstimadoTxt || !diferenciaCajaTxt) {
+                return;
+            }
+            const cantidad = parseFloat(cantidadInput.value || '0') || 0;
+            const costo = cantidad * precioUnidadLinea;
+            const diferencia = saldoDisponible - costo;
+            costoEstimadoTxt.textContent = costo.toFixed(2);
+            diferenciaCajaTxt.textContent = diferencia.toFixed(2);
+            diferenciaCajaTxt.style.color = diferencia < 0 ? '#dc3545' : '#198754';
+            if (saldoDisponibleTxt) {
+                saldoDisponibleTxt.textContent = saldoDisponible.toFixed(2);
+            }
+        }
+
+        cantidadInput.addEventListener('input', actualizarResumenEfectivo);
+        document.querySelectorAll('.js-precio-input, .js-cantidad-input').forEach((input) => {
+            input.addEventListener('input', () => {
+                const idDetalle = input.dataset.idDetalle;
+                recalcularFila(idDetalle);
+                recalcularTotalCompra();
+                actualizarResumenEfectivo();
+            });
+        });
+
+        metodoPagoLinea.addEventListener('change', toggleTarjetaLinea);
+        recalcularTodo();
+        toggleTarjetaLinea();
+
+        botones.forEach((btn) => {
+            btn.addEventListener('click', function () {
+                const cantidad = parseFloat(this.getAttribute('data-cantidad') || '0');
+                const precio = parseFloat(this.getAttribute('data-precio') || '0');
+                modalForm.action = this.getAttribute('data-url') || '';
+                modalNombre.textContent = this.getAttribute('data-nombre') || '-';
+                precioUnidadLinea = Number.isFinite(precio) ? precio : 0;
+                cantidadInput.value = Number.isFinite(cantidad) ? cantidad.toFixed(2) : '';
+                cantidadInput.max = Number.isFinite(cantidad) ? cantidad.toFixed(2) : '';
+
+                hiddenFecha.value = fechaEntrega ? fechaEntrega.value : '';
+                hiddenProveedor.value = proveedor ? proveedor.value : '';
+
+                modal.show();
+                actualizarResumenEfectivo();
+            });
+        });
+    }
+});
+</script>
 
 {% endblock %}

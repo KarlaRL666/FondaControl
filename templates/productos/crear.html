@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Crear Nuevo Producto{% endblock %}
+{% import '_macros.html' as macros %}
 
 {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+    <style>
+        .form-page .form-label { color: #000 !important; }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -10,6 +14,10 @@
     <div class="form-container">
         <div class="form-title">
             <h1>Crear Nuevo Producto</h1>
+        </div>
+
+        <div class="alert alert-info" role="status" style="margin-bottom: 1rem;">
+            Guarda primero los datos del producto. Al finalizar, te enviaremos a crear su receta.
         </div>
         
         <form method="POST" enctype="multipart/form-data" novalidate>
@@ -20,100 +28,35 @@
                     <i class="bi bi-box-seam"></i> Información Básica
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-full">
-                        {{ form.nombre.label(class="form-label") }}
-                        {{ form.nombre(class="form-control", placeholder="Ej: Tacos al Pastor") }}
-                        {% for error in form.nombre.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.nombre, 'form-group-full', 'Ej: Tacos al Pastor', tooltip='Nombre comercial que verá el cliente') }}
+                    {{ macros.render_form_field(form.descripcion, 'form-group-full', 'Ej: Tortilla, pastor, piña y salsa', tooltip='Resumen breve de ingredientes o preparación') }}
+                    {{ macros.render_form_field(form.id_categoria_platillo, input_class='form-select', tooltip='Categoría para filtros y reportes') }}
 
                     <div class="form-group-full">
-                        {{ form.descripcion.label(class="form-label") }}
-                        {{ form.descripcion(class="form-control", rows="3", placeholder="Descripción o ingredientes principales") }}
-                        {% for error in form.descripcion.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
+                        <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+                            {{ form.usar_categoria_nueva(id='usar_categoria_nueva') }}
+                            Crear nueva categoría personalizada
+                        </label>
                     </div>
 
-                    <div class="form-group-half">
-                        {{ form.id_categoria_platillo.label(class="form-label") }}
-                        {{ form.id_categoria_platillo(class="form-control") }}
-                        {% for error in form.id_categoria_platillo.errors %}
+                    <div class="form-group-half" id="nueva_categoria_wrap" style="display:none;">
+                        {{ form.nombre_nueva_categoria.label(class="form-label") }}
+                        {{ form.nombre_nueva_categoria(class="form-control", placeholder="Ej: Especialidades de la casa") }}
+                        {% for error in form.nombre_nueva_categoria.errors %}
                             <small class="text-danger">{{ error }}</small>
                         {% endfor %}
                     </div>
                 </div>
             </div>
-
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="bi bi-journal-plus"></i> Receta automática
-                </h3>
-                <div class="form-grid">
-                    <div class="form-group-half">
-                        <label class="form-label" for="id_materia_select">Materia prima</label>
-                        <select id="id_materia_select" class="form-control">
-                            <option value="">Selecciona una materia prima</option>
-                            {% for materia in materias_primas %}
-                                <option value="{{ materia.id_materia }}">{{ materia.nombre }} ({{ materia.unidad_medida }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group-half">
-                        <label class="form-label" for="cantidad_materia">Cantidad</label>
-                        <input id="cantidad_materia" type="number" min="0.01" step="0.01" class="form-control" placeholder="0.00">
-                    </div>
-                    <div class="form-group-full">
-                        <button type="button" id="agregar_materia_btn" class="btn-secondary">Agregar materia prima</button>
-                    </div>
-                    <div class="form-group-full">
-                        <table class="data-table" id="tabla_receta">
-                            <thead>
-                                <tr>
-                                    <th>Materia prima</th>
-                                    <th>Cantidad</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id="fila_vacia_receta"><td colspan="3" style="text-align:center;">No hay materias primas agregadas.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            {{ form.ingredientes_json(id='ingredientes_json') }}
 
             <div class="form-section">
                 <h3 class="section-title">
                     <i class="bi bi-currency-dollar"></i> Precios y Stock
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.precio.label(class="form-label") }}
-                        {{ form.precio(class="form-control", step="0.01", min="0.01", placeholder="0.00") }}
-                        {% for error in form.precio.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.stock_actual.label(class="form-label") }}
-                        {{ form.stock_actual(class="form-control", step="0.1", min="0", placeholder="0") }}
-                        {% for error in form.stock_actual.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.stock_minimo.label(class="form-label") }}
-                        {{ form.stock_minimo(class="form-control", step="0.1", min="0", placeholder="0") }}
-                        {% for error in form.stock_minimo.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.precio, placeholder='Ej: 120.00', tooltip='Precio de venta por unidad') }}
+                    {{ macros.render_form_field(form.stock_actual, placeholder='Ej: 30', tooltip='Existencia disponible actualmente') }}
+                    {{ macros.render_form_field(form.stock_minimo, placeholder='Ej: 5', tooltip='Punto mínimo para generar alerta de producción') }}
                 </div>
             </div>
 
@@ -122,19 +65,15 @@
                     <i class="bi bi-image"></i> Imagen (Opcional)
                 </h3>
                 <div class="form-grid">
+                    {{ macros.render_form_field(form.imagen, 'form-group-full', tooltip='Sube una imagen para menú y catálogo') }}
                     <div class="form-group-full">
-                        {{ form.imagen.label(class="form-label") }}
-                        {{ form.imagen(class="form-control", accept=".jpg,.jpeg,.png,.webp") }}
-                        {% for error in form.imagen.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
                         <small class="text-gray-500">Selecciona una imagen local (JPG, JPEG, PNG o WEBP). Tamaño máximo: 3MB.</small>
                     </div>
                 </div>
             </div>
 
             <div class="button-group">
-                {{ form.submit(class="crear-btn") }}
+                <button type="submit" class="crear-btn">Guardar y crear receta</button>
                 <a type="button" href="{{ url_for('productos.index') }}" class="btn volver-btn">Cancelar</a>
             </div>
 
@@ -146,69 +85,19 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const ingredientes = [];
-    const selectMateria = document.getElementById('id_materia_select');
-    const cantidadInput = document.getElementById('cantidad_materia');
-    const agregarBtn = document.getElementById('agregar_materia_btn');
-    const tablaBody = document.querySelector('#tabla_receta tbody');
-    const campoJson = document.getElementById('ingredientes_json');
+    const checkCategoria = document.getElementById('usar_categoria_nueva');
+    const wrapCategoria = document.getElementById('nueva_categoria_wrap');
+    const selectCategoria = document.getElementById('id_categoria_platillo');
 
-    function syncJson() {
-        campoJson.value = JSON.stringify(ingredientes);
+    if (checkCategoria && wrapCategoria && selectCategoria) {
+        const toggleCategoria = () => {
+            const activa = checkCategoria.checked;
+            wrapCategoria.style.display = activa ? '' : 'none';
+            selectCategoria.disabled = activa;
+        };
+        checkCategoria.addEventListener('change', toggleCategoria);
+        toggleCategoria();
     }
-
-    function renderTabla() {
-        tablaBody.innerHTML = '';
-        if (!ingredientes.length) {
-            tablaBody.innerHTML = '<tr id="fila_vacia_receta"><td colspan="3" style="text-align:center;">No hay materias primas agregadas.</td></tr>';
-            syncJson();
-            return;
-        }
-
-        ingredientes.forEach((item, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.nombre}</td>
-                <td>${item.cantidad}</td>
-                <td><button type="button" class="btn-delete" data-index="${index}">Quitar</button></td>
-            `;
-            tablaBody.appendChild(tr);
-        });
-
-        tablaBody.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const idx = Number(this.dataset.index);
-                ingredientes.splice(idx, 1);
-                renderTabla();
-            });
-        });
-
-        syncJson();
-    }
-
-    agregarBtn.addEventListener('click', function() {
-        const idMateria = Number(selectMateria.value);
-        const nombreMateria = selectMateria.options[selectMateria.selectedIndex]?.text || '';
-        const cantidad = Number(cantidadInput.value);
-
-        if (!idMateria || !cantidad || cantidad <= 0) {
-            return;
-        }
-
-        const existente = ingredientes.find(i => i.id_materia === idMateria);
-        if (existente) {
-            existente.cantidad = Number((existente.cantidad + cantidad).toFixed(2));
-        } else {
-            ingredientes.push({
-                id_materia: idMateria,
-                nombre: nombreMateria,
-                cantidad: Number(cantidad.toFixed(2))
-            });
-        }
-
-        cantidadInput.value = '';
-        renderTabla();
-    });
 
     renderTabla();
 });

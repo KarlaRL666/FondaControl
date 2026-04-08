@@ -8,7 +8,7 @@
     }
 
     .close-hero {
-        background: linear-gradient(135deg, #1b3b5f 0%, #255a8f 60%, #2e6fad 100%);
+        background: linear-gradient(135deg, #6B5344 0%, #8B7355 60%, #FF9800 100%);
         color: #fff;
         border-radius: 16px;
         padding: 18px;
@@ -49,11 +49,11 @@
         font-weight: 700;
     }
 
-    .kpi-efectivo { background: linear-gradient(140deg, #1f8a57, #2ba769); }
-    .kpi-egresos { background: linear-gradient(140deg, #9e3b25, #bd5a43); }
-    .kpi-neto { background: linear-gradient(140deg, #5f2fa8, #7e4ad0); }
-    .kpi-tarjeta { background: linear-gradient(140deg, #2a67a1, #4588c8); }
-    .kpi-pedidos { background: linear-gradient(140deg, #4d525b, #6a707b); }
+    .kpi-efectivo { background: linear-gradient(140deg, #8B7355, #FF9800); }
+    .kpi-egresos { background: linear-gradient(140deg, #6B5344, #8B7355); }
+    .kpi-neto { background: linear-gradient(140deg, #FF9800, #FFC107); }
+    .kpi-tarjeta { background: linear-gradient(140deg, #FFC107, #FFD54F); color: #3a3a3a; }
+    .kpi-pedidos { background: linear-gradient(140deg, #3a3a3a, #6B5344); }
 
     .close-grid {
         display: grid;
@@ -133,7 +133,7 @@
         </article>
         <article class="kpi-card kpi-egresos">
             <h3>Compras descontadas</h3>
-            <p class="value">-${{ '%.2f'|format(total_egresos) }}</p>
+            <p class="value">${{ '%.2f'|format(total_egresos) }}</p>
         </article>
         <article class="kpi-card kpi-neto">
             <h3>Neto de efectivo</h3>
@@ -194,7 +194,7 @@
                         <tr>
                             <td>#{{ compra.id_compra }}</td>
                             <td>{{ (compra.fecha_entrega or compra.fecha).strftime('%H:%M') if (compra.fecha_entrega or compra.fecha) else '' }}</td>
-                            <td class="minus">-${{ '%.2f'|format(compra.total) }}</td>
+                            <td class="minus">${{ '%.2f'|format((compra.total or 0)|abs) }}</td>
                         </tr>
                         {% else %}
                         <tr>

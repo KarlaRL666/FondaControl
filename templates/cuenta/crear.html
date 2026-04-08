@@ -1,21 +1,52 @@
 {% extends "base.html" %}
 
-{% block container %}
+{% block title %}Crear Cuenta{% endblock %}
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+{% block content %}
+<style>
+    .account-shell {
+        max-width: 980px;
+        margin: 0 auto;
+    }
 
-            <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-header bg-primary text-white text-center rounded-top-4">
-                    <h3>Crear Cuenta</h3>
-                    <p class="mb-0">Regístrate como cliente</p>
-                </div>
+    .account-hero {
+        background: linear-gradient(140deg, #6B5344 0%, #8B7355 60%, #FF9800 100%);
+        color: #fff;
+        border-radius: 16px;
+        padding: 1.2rem 1.3rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 14px 28px rgba(20, 68, 51, 0.26);
+    }
 
-                <div class="card-body p-4">
+    .account-card {
+        border: 1px solid #deebe3;
+        border-radius: 16px;
+        box-shadow: 0 12px 24px rgba(18, 43, 34, 0.08);
+        overflow: hidden;
+    }
 
-                    <form method="POST" novalidate>
-                        {{ form.hidden_tag() }}
+    .account-card .card-header {
+        background: #f3f9f6;
+        border-bottom: 1px solid #deebe3;
+    }
+</style>
+
+<div class="account-shell mt-3">
+    <section class="account-hero">
+        <h1 class="h3 mb-1">Crear cuenta</h1>
+        <p class="mb-0">Completa tus datos para registrarte como cliente.</p>
+    </section>
+
+    <div class="account-card card">
+        <div class="card-header text-center py-3">
+            <h3 class="h5 mb-1">Registro de cliente</h3>
+            <p class="text-muted mb-0">Tus datos se usan para pedidos y seguimiento.</p>
+        </div>
+
+        <div class="card-body p-4">
+
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
 
                         <!-- Nombre -->
                         <div class="row mb-3">
@@ -103,25 +134,21 @@
                         </div>
 
                         <!-- Botón -->
-                        <div class="d-grid">
-                            {{ form.submit(class="btn btn-primary btn-lg") }}
-                        </div>
-
-                    </form>
-
+                <div class="d-grid">
+                    {{ form.submit(class="btn btn-success btn-lg") }}
                 </div>
 
-                <div class="card-footer text-center">
-                    <small>¿Ya tienes cuenta? 
-                        <a href="{{ url_for('auth.login') }}">Inicia sesión</a>
-                    </small>
-                </div>
-            </div>
+            </form>
 
+        </div>
+
+        <div class="card-footer text-center py-3">
+            <small>¿Ya tienes cuenta?
+                <a href="{{ url_for('auth.login') }}" class="fw-semibold">Inicia sesión</a>
+            </small>
         </div>
     </div>
 </div>
-
 {% endblock %}
 {% block scripts %} 
 <script src="{{ url_for('static', filename='js/pages/usuarios.js') }}"></script>

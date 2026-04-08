@@ -180,11 +180,30 @@ class MateriaPrima(db.Model):
     __table_args__ = (
         CheckConstraint('stock_actual >= 0', name='check_stock_actual_materia_no_negativo'),
         CheckConstraint('stock_minimo >= 0', name='check_stock_minimo_materia_no_negativo'),
-        CheckConstraint('porcentaje_merma >= 0 AND porcentaje_merma <= 100', name='check_porcentaje_merma'),
+        CheckConstraint('porcentaje_merma >= 0 AND porcentaje_merma <= 100', name='check_porcentaje_merma_valido'),
         CheckConstraint('factor_conversion > 0', name='check_factor_conversion_positivo'),
-        CheckConstraint("unidad_medida IN ('kg', 'g', 'l', 'ml', 'pz')", name='check_unidad_medida_materia')
+        CheckConstraint("unidad_medida IN ('kg', 'g', 'l', 'ml', 'pz', 'unidad', 'botella', 'bulto', 'paquete', 'docena', 'caja', 'bolsa', 'costal')", name='check_unidad_medida_materia')
     )
+    
+    def convertir_a_gramos(self, cantidad: float) -> float:
+        """Convierte cualquier cantidad a gramos (estándar interno)"""
+        if self.unidad_medida in ['g', 'unidad', 'pz']:
+            return cantidad
+        elif self.unidad_medida == 'kg':
+            return cantidad * 1000
+        elif self.unidad_medida == 'l':
+            return cantidad * 1000   # asumimos densidad 1 para líquidos (ajustable después)
+        elif self.unidad_medida == 'ml':
+            return cantidad
+        elif self.unidad_medida in ['bulto', 'paquete', 'caja', 'docena']:
+            return cantidad * self.factor_conversion
+        return cantidad * self.factor_conversion
 
+    def stock_real_disponible(self):
+        """Stock usable después de aplicar merma"""
+        stock_gramos = self.convertir_a_gramos(self.stock_actual)
+        return stock_gramos * (1 - self.porcentaje_merma / 100)
+    
 class Producto(db.Model):
     __tablename__ = 'productos'
     id_producto = db.Column(db.Integer, primary_key=True)
@@ -213,14 +232,14 @@ class Producto(db.Model):
         CheckConstraint("imagen REGEXP '^((https?://.*\\.(png|jpg|jpeg|gif|svg|webp))|(uploads/.*\\.(png|jpg|jpeg|gif|svg|webp)))$'", name='check_formato_imagen'),
     )   
 
-
-#Creacion de los prodcutos a concluido, pero pq guardamos en modo IMG?
 class Receta(db.Model):
     __tablename__ = 'recetas'
     id_receta = db.Column(db.Integer, primary_key=True)
     id_producto = db.Column(db.Integer, db.ForeignKey('productos.id_producto'), nullable=False)
-    rendimiento = db.Column(db.Float, default=0, nullable=False)  # Porcentaje de rendimiento (0-100)
-    nota = db.Column(db.Text)  # Notas opcionales sobre la receta
+    rendimiento = db.Column(db.Float, default=0, nullable=False)
+    cantidad_produccion = db.Column(db.Float, default=1, nullable=False)
+    unidad_produccion = db.Column(db.String(20), default='pz', nullable=False)
+    nota = db.Column(db.Text)
     estado = db.Column(db.Boolean, default=True)
     fecha_creacion = db.Column(db.DateTime, default=datetime.datetime.now, nullable=False)
     
@@ -231,10 +250,7 @@ class Receta(db.Model):
         """Calcula el rendimiento basado en el total de ingredientes"""
         if not self.detalles:
             return 0
-        # Rendimiento simple: si hay 2 kg de ingredientes, es 100% de rendimiento
-        # Si hay 1 kg, es 50%, etc. Se puede customizar según sea necesario
         total_ingredientes = sum(d.cantidad for d in self.detalles)
-        # Por ahora, asumimos 100% si hay ingredientes
         return 100.0 if total_ingredientes > 0 else 0
 
 class RecetaDetalle(db.Model):
@@ -243,10 +259,16 @@ class RecetaDetalle(db.Model):
     cantidad = db.Column(db.Float, nullable=False)
     id_receta = db.Column(db.Integer, db.ForeignKey('recetas.id_receta'), nullable=False)
     id_materia = db.Column(db.Integer, db.ForeignKey('materias_primas.id_materia'), nullable=False)
+    unidad_medida = db.Column(db.String(20), default='g', nullable=False)
+    cantidad_requerida = db.Column(db.Float, default=0, nullable=False)
 
     receta = db.relationship('Receta', back_populates='detalles')
     materia_prima = db.relationship('MateriaPrima', back_populates='detalle_recetas')
-      
+    
+    def cantidad_ajustada_merma(self):
+        """Compatibilidad: devuelve la cantidad requerida actual sin ajustes de merma."""
+        return self.cantidad_requerida or self.cantidad
+    
 class Produccion(db.Model):
     __tablename__ = 'producciones'
     id_produccion = db.Column(db.Integer, primary_key=True)
@@ -272,6 +294,8 @@ class DetalleProduccion(db.Model):
     id_produccion = db.Column(db.Integer, db.ForeignKey('producciones.id_produccion'), nullable=False)
     id_materia = db.Column(db.Integer, db.ForeignKey('materias_primas.id_materia'), nullable=True)
     id_producto = db.Column(db.Integer, db.ForeignKey('productos.id_producto'), nullable=False)
+    completado = db.Column(db.Boolean, default=False, nullable=False)
+    cantidad_producida = db.Column(db.Float, default=0, nullable=False)
 
     produccion = db.relationship('Produccion', back_populates='detalles')
     materia_prima = db.relationship('MateriaPrima', back_populates='detalle_producciones')
@@ -284,6 +308,9 @@ class Compra(db.Model):
     total = db.Column(db.Float, nullable=False)
     fecha_entrega = db.Column(db.DateTime)
     metodo_pago = db.Column(db.String(50))
+    tarjeta_titular = db.Column(db.String(120))
+    tarjeta_ultimos4 = db.Column(db.String(4))
+    tarjeta_vencimiento = db.Column(db.String(5))
     estado = db.Column(db.String(50), nullable=False, default='Solicitada')
     desde_produccion = db.Column(db.Boolean, nullable=False, default=False)
     id_proveedor = db.Column(db.Integer, db.ForeignKey('proveedores.id_proveedor'))
@@ -308,6 +335,7 @@ class DetalleCompra(db.Model):
     cantidad = db.Column(db.Float, nullable=False)
     precio_u = db.Column(db.Float, nullable=False)
     subtotal = db.Column(db.Float, nullable=False)
+    recibido = db.Column(db.Boolean, default=False, nullable=False)
   
     compra = db.relationship('Compra', back_populates='detalles')
     materia_prima = db.relationship('MateriaPrima', back_populates='detalle_compras')
@@ -327,6 +355,10 @@ class Venta(db.Model):
     estado = db.Column(db.String(50), nullable=False)
     id_usuario = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
     fecha_creacion = db.Column(db.DateTime, default=datetime.datetime.now, nullable=False)
+    # Datos de tarjeta (solo si metodo_pago es 'Tarjeta')
+    tarjeta_titular = db.Column(db.String(120))
+    tarjeta_numero = db.Column(db.String(4))  # Guardamos solo los últimos 4 dígitos por seguridad
+    tarjeta_vencimiento = db.Column(db.String(5))  # MM/YY
 
     usuario = db.relationship('Usuario', back_populates='ventas')
     detalles = db.relationship('DetalleVenta', back_populates='venta', cascade="all, delete-orphan")
@@ -363,12 +395,12 @@ class Pedido(db.Model):
     requiere_produccion = db.Column(db.Boolean, default=False)
     total = db.Column(db.Float, nullable=False)
     cliente = db.relationship('Cliente', back_populates='pedidos')
-    produccion = db.relationship('Produccion', back_populates='pedido', uselist=False)
+    produccion = db.relationship('Produccion', back_populates='pedido', uselist=False, cascade="all, delete-orphan")
     detalles = db.relationship('DetallePedido', back_populates='pedido', cascade="all, delete-orphan")
     meta_pedido = db.relationship('PedidoMeta', back_populates='pedido', uselist=False, cascade="all, delete-orphan")
 
     __table_args__ = (
-        CheckConstraint("estado IN ('Pendiente', 'En Proceso', 'Producido', 'Completado', 'Cancelado')", name='check_estado_pedido'),
+        CheckConstraint("estado IN ('Pendiente', 'En Proceso', 'Producido', 'Completado', 'Pagado', 'Cancelado')", name='check_estado_pedido'),
         CheckConstraint('total >= 0', name='check_total_pedido_no_negativo'),
     )
 
@@ -396,6 +428,8 @@ class DetallePedido(db.Model):
     subtotal = db.Column(db.Float, nullable=False)
     id_pedido = db.Column(db.Integer, db.ForeignKey('pedidos.id_pedido'), nullable=False)
     id_producto = db.Column(db.Integer, db.ForeignKey('productos.id_producto'), nullable=False)
+    atendido = db.Column(db.Boolean, default=False, nullable=False)
+    en_produccion = db.Column(db.Boolean, default=False, nullable=False)
 
     pedido = db.relationship('Pedido', back_populates='detalles')
     producto= db.relationship('Producto', back_populates='detalle_pedidos')
@@ -466,3 +500,4 @@ class MovimientoCaja(db.Model):
         CheckConstraint("tipo IN ('Ingreso', 'Egreso')", name='check_tipo_movimiento'),
         CheckConstraint('monto >= 0', name='check_monto_movimiento_no_negativo'),
     )
+

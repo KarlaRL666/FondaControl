@@ -7,7 +7,6 @@ from .services import (
     crear_producto, obtener_productos, desactivar_producto,
     activar_producto, obtener_producto, actualizar_producto, buscar_productos, obtener_categorias
 )
-from models import MateriaPrima
 
 
 @productos.route('/', methods=['GET'])
@@ -26,8 +25,19 @@ def index():
         current_app.logger.error(f"Error al obtener productos: {str(error)}")
         flash(error, 'danger')
         return redirect(url_for('dashboard.index'))
+
+    productos_stock_bajo = [
+        producto for producto in resultados
+        if float(producto.get('stock_actual') or 0) <= float(producto.get('stock_minimo') or 0)
+    ]
     
-    return render_template('productos/index.html', productos=resultados, name=current_user.username, categorias=categorias)
+    return render_template(
+        'productos/index.html',
+        productos=resultados,
+        productos_stock_bajo=productos_stock_bajo,
+        name=current_user.username,
+        categorias=categorias,
+    )
 
 
 @productos.route('/crear', methods=['GET', 'POST'])
@@ -42,20 +52,19 @@ def crear():
         flash(error, 'danger')
         return redirect(url_for('productos.index'))
     form.id_categoria_platillo.choices = [(cat.id_categoria_platillo, cat.nombre) for cat in categorias]
-    materias_primas = MateriaPrima.query.filter_by(estado=True).order_by(MateriaPrima.nombre.asc()).all()
-    
     if form.validate_on_submit():
-        exito, error = crear_producto(form)
+        resultado = crear_producto(form)
+        exito, error, id_producto_nuevo = resultado
         
         if exito:
             current_app.logger.info(f"Producto creado: {form.nombre.data}")
-            flash('Producto creado correctamente', 'success')
-            return redirect(url_for('productos.index'))
+            flash('Producto creado correctamente. Ahora crea su receta.', 'success')
+            return redirect(url_for('recetas.crear', id_producto=id_producto_nuevo))
         else:
             current_app.logger.error(f"Error al crear producto: {str(error)}")
             flash(error, 'danger')
     
-    return render_template('productos/crear.html', form=form, materias_primas=materias_primas)
+    return render_template('productos/crear.html', form=form)
 
 
 @productos.route('/editar', methods=['GET', 'POST'])

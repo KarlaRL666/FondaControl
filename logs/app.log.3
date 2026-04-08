@@ -1,47 +1,107 @@
-2026-04-07 17:19:57,893 ERROR: Error loading user 1: Could not determine join condition between parent/child tables on relationship Categoria.materias_primas - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
-2026-04-07 17:19:57,911 ERROR: Error loading user 1: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Categoria(categorias)]'. Original exception was: Could not determine join condition between parent/child tables on relationship Categoria.materias_primas - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
-2026-04-07 17:23:10,245 INFO: Login exitoso para usuario: admin_test
-2026-04-07 17:23:12,268 ERROR: Error: (pymysql.err.OperationalError) (1054, "Unknown column 'materias_primas.id_categoria_ingrediente' in 'SELECT'")
-[SQL: SELECT materias_primas.id_materia AS materias_primas_id_materia, materias_primas.nombre AS materias_primas_nombre, materias_primas.unidad_medida AS materias_primas_unidad_medida, materias_primas.stock_actual AS materias_primas_stock_actual, materias_primas.stock_minimo AS materias_primas_stock_minimo, materias_primas.precio AS materias_primas_precio, materias_primas.porcentaje_merma AS materias_primas_porcentaje_merma, materias_primas.factor_conversion AS materias_primas_factor_conversion, materias_primas.estado AS materias_primas_estado, materias_primas.fecha_creacion AS materias_primas_fecha_creacion, materias_primas.id_categoria_ingrediente AS materias_primas_id_categoria_ingrediente, materias_primas.id_proveedor AS materias_primas_id_proveedor 
-FROM materias_primas ORDER BY materias_primas.nombre ASC]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2026-04-07 17:23:20,491 ERROR: Error: (pymysql.err.OperationalError) (1054, "Unknown column 'materias_primas.id_categoria_ingrediente' in 'SELECT'")
-[SQL: SELECT materias_primas.id_materia AS materias_primas_id_materia, materias_primas.nombre AS materias_primas_nombre, materias_primas.unidad_medida AS materias_primas_unidad_medida, materias_primas.stock_actual AS materias_primas_stock_actual, materias_primas.stock_minimo AS materias_primas_stock_minimo, materias_primas.precio AS materias_primas_precio, materias_primas.porcentaje_merma AS materias_primas_porcentaje_merma, materias_primas.factor_conversion AS materias_primas_factor_conversion, materias_primas.estado AS materias_primas_estado, materias_primas.fecha_creacion AS materias_primas_fecha_creacion, materias_primas.id_categoria_ingrediente AS materias_primas_id_categoria_ingrediente, materias_primas.id_proveedor AS materias_primas_id_proveedor 
-FROM materias_primas ORDER BY materias_primas.nombre ASC]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2026-04-07 17:23:26,531 ERROR: Error: (pymysql.err.OperationalError) (1054, "Unknown column 'materias_primas.id_categoria_ingrediente' in 'SELECT'")
-[SQL: SELECT materias_primas.id_materia AS materias_primas_id_materia, materias_primas.nombre AS materias_primas_nombre, materias_primas.unidad_medida AS materias_primas_unidad_medida, materias_primas.stock_actual AS materias_primas_stock_actual, materias_primas.stock_minimo AS materias_primas_stock_minimo, materias_primas.precio AS materias_primas_precio, materias_primas.porcentaje_merma AS materias_primas_porcentaje_merma, materias_primas.factor_conversion AS materias_primas_factor_conversion, materias_primas.estado AS materias_primas_estado, materias_primas.fecha_creacion AS materias_primas_fecha_creacion, materias_primas.id_categoria_ingrediente AS materias_primas_id_categoria_ingrediente, materias_primas.id_proveedor AS materias_primas_id_proveedor 
-FROM materias_primas ORDER BY materias_primas.nombre ASC]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2026-04-07 17:23:34,828 ERROR: Error al obtener proveedores: (pymysql.err.ProgrammingError) (1146, "Table 'fonda.categorias_proveedor' doesn't exist")
-[SQL: SELECT proveedores.id_proveedor AS proveedores_id_proveedor, proveedores.id_persona AS proveedores_id_persona, proveedores.id_categoria_proveedor AS proveedores_id_categoria_proveedor, proveedores.estado AS proveedores_estado 
-FROM proveedores INNER JOIN personas ON personas.id_persona = proveedores.id_persona INNER JOIN categorias_proveedor ON categorias_proveedor.id_categoria_proveedor = proveedores.id_categoria_proveedor ORDER BY personas.nombre ASC]
-(Background on this error at: https://sqlalche.me/e/20/f405)
-2026-04-07 17:24:53,907 ERROR: Error: (pymysql.err.OperationalError) (1054, "Unknown column 'materias_primas.id_categoria_ingrediente' in 'SELECT'")
-[SQL: SELECT materias_primas.id_materia AS materias_primas_id_materia, materias_primas.nombre AS materias_primas_nombre, materias_primas.unidad_medida AS materias_primas_unidad_medida, materias_primas.stock_actual AS materias_primas_stock_actual, materias_primas.stock_minimo AS materias_primas_stock_minimo, materias_primas.precio AS materias_primas_precio, materias_primas.porcentaje_merma AS materias_primas_porcentaje_merma, materias_primas.factor_conversion AS materias_primas_factor_conversion, materias_primas.estado AS materias_primas_estado, materias_primas.fecha_creacion AS materias_primas_fecha_creacion, materias_primas.id_categoria_ingrediente AS materias_primas_id_categoria_ingrediente, materias_primas.id_proveedor AS materias_primas_id_proveedor 
-FROM materias_primas ORDER BY materias_primas.nombre ASC]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2026-04-07 17:32:29,000 WARNING: 404: http://127.0.0.1:5000/favicon.ico
-2026-04-07 17:34:43,462 WARNING: Intento de login fallido para usuario: admin
-2026-04-07 17:34:45,795 WARNING: Intento de login fallido para usuario: admin
-2026-04-07 17:34:57,088 WARNING: Intento de login fallido para usuario: admin
-2026-04-07 17:35:26,128 WARNING: 404: http://127.0.0.1:5000/favicon.ico
-2026-04-07 17:35:53,486 WARNING: Intento de login fallido para usuario: admin123
-2026-04-07 17:36:29,080 INFO: Login exitoso para usuario: admin_test
-2026-04-07 17:36:39,056 ERROR: Error: (pymysql.err.OperationalError) (1054, "Unknown column 'materias_primas.id_categoria_ingrediente' in 'SELECT'")
-[SQL: SELECT materias_primas.id_materia AS materias_primas_id_materia, materias_primas.nombre AS materias_primas_nombre, materias_primas.unidad_medida AS materias_primas_unidad_medida, materias_primas.stock_actual AS materias_primas_stock_actual, materias_primas.stock_minimo AS materias_primas_stock_minimo, materias_primas.precio AS materias_primas_precio, materias_primas.porcentaje_merma AS materias_primas_porcentaje_merma, materias_primas.factor_conversion AS materias_primas_factor_conversion, materias_primas.estado AS materias_primas_estado, materias_primas.fecha_creacion AS materias_primas_fecha_creacion, materias_primas.id_categoria_ingrediente AS materias_primas_id_categoria_ingrediente, materias_primas.id_proveedor AS materias_primas_id_proveedor 
-FROM materias_primas ORDER BY materias_primas.nombre ASC]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2026-04-07 17:37:24,604 ERROR: Error: (pymysql.err.OperationalError) (1054, "Unknown column 'materias_primas.id_categoria_ingrediente' in 'SELECT'")
-[SQL: SELECT materias_primas.id_materia AS materias_primas_id_materia, materias_primas.nombre AS materias_primas_nombre, materias_primas.unidad_medida AS materias_primas_unidad_medida, materias_primas.stock_actual AS materias_primas_stock_actual, materias_primas.stock_minimo AS materias_primas_stock_minimo, materias_primas.precio AS materias_primas_precio, materias_primas.porcentaje_merma AS materias_primas_porcentaje_merma, materias_primas.factor_conversion AS materias_primas_factor_conversion, materias_primas.estado AS materias_primas_estado, materias_primas.fecha_creacion AS materias_primas_fecha_creacion, materias_primas.id_categoria_ingrediente AS materias_primas_id_categoria_ingrediente, materias_primas.id_proveedor AS materias_primas_id_proveedor 
-FROM materias_primas ORDER BY materias_primas.nombre ASC]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2026-04-07 17:41:38,632 INFO: Proveedor creado: Pepe
-2026-04-07 17:53:12,739 ERROR: Error al obtener usuarios: (pymysql.err.OperationalError) (1305, 'PROCEDURE fonda.sp_verUsuarios does not exist')
-[SQL: CALL sp_verUsuarios()]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2026-04-07 17:54:22,726 INFO: Proveedor creado: nfsidhshbfsuj
-2026-04-07 18:02:01,072 ERROR: Error al crear producto: (pymysql.err.OperationalError) (1364, "Field 'id_categoria' doesn't have a default value")
-[SQL: INSERT INTO productos (nombre, descripcion, precio, stock_actual, stock_minimo, imagen, estado, fecha_creacion, id_categoria_platillo) VALUES (%(nombre)s, %(descripcion)s, %(precio)s, %(stock_actual)s, %(stock_minimo)s, %(imagen)s, %(estado)s, %(fecha_creacion)s, %(id_categoria_platillo)s)]
-[parameters: {'nombre': 'Awua de karla uwu', 'descripcion': 'awua rika', 'precio': 999999.0, 'stock_actual': 1.0, 'stock_minimo': 1.0, 'imagen': 'uploads/productos/9089a1888fe1403bb9f1dae695dc8711.png', 'estado': 1, 'fecha_creacion': datetime.datetime(2026, 4, 7, 18, 2, 1, 70388), 'id_categoria_platillo': 4}]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-04-13 18:40:01,975 INFO: Login exitoso para usuario: jonacoca
+2026-04-13 19:12:15,432 WARNING: 404: http://localhost:5000/static/style/img/banner.jpg
+2026-04-13 19:19:02,080 WARNING: 404: http://localhost:5000/static/style/img/banner.jpg
+2026-04-13 19:20:49,110 WARNING: 404: http://localhost:5000/static/style/img/banner.jpg
+2026-04-13 22:25:33,292 WARNING: 404: http://127.0.0.1:5000/static/style/img/banner.jpg
+2026-04-13 23:51:24,848 WARNING: 404: http://127.0.0.1:5000/static/style/img/banner.jpg
+2026-04-13 23:51:40,976 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-13 23:59:11,489 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-13 23:59:15,463 WARNING: 404: http://127.0.0.1:5000/static/style/img/banner.jpg
+2026-04-14 00:07:56,140 WARNING: 404: http://127.0.0.1:5000/static/style/img/banner.jpg
+2026-04-14 00:14:37,877 WARNING: 404: http://127.0.0.1:5000/static/style/img/banner.jpg
+2026-04-14 00:14:37,892 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:14:53,223 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:15:01,612 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:15:03,129 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:15:05,558 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:15:23,627 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:15:28,212 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:15:29,548 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:17:47,657 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:17:50,844 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:17:57,453 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:18:50,990 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:19:03,995 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:19:47,043 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:19:48,265 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:20:06,894 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:20:22,250 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:20:39,360 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:21:26,393 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:22:05,217 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:23:39,093 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:24:00,424 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:24:06,443 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:25:02,965 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:26:23,724 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:32:49,132 WARNING: 404: http://127.0.0.1:5000/static/style/img/banner.jpg
+2026-04-14 00:32:49,149 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:33:28,118 WARNING: 404: http://127.0.0.1:5000/static/style/img/banner.jpg
+2026-04-14 00:33:28,124 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:33:42,933 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:34:11,642 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:34:49,033 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:37:46,446 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:37:55,817 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:37:59,527 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:38:14,267 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:39:41,757 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:39:51,154 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:40:25,929 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:41:03,805 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:41:12,864 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:41:25,479 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:42:06,318 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:42:51,051 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:43:28,262 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:44:45,778 WARNING: 404: http://localhost:5000/static/style/img/banner.jpg
+2026-04-14 00:44:45,886 WARNING: 404: http://localhost:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:45:48,674 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:46:34,622 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:47:28,040 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:47:45,507 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:48:18,885 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:48:56,097 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:49:39,043 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:49:51,109 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:50:28,465 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:50:55,007 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:51:12,112 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:51:24,973 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:51:36,477 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:52:13,677 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:52:17,802 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:52:35,657 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:53:14,274 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:53:30,096 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:53:48,104 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:54:06,697 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:54:43,287 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:54:59,949 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:55:29,906 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:55:55,541 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:56:05,702 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:56:18,844 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:56:54,829 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:57:31,410 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:57:37,588 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:57:46,116 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:57:57,277 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:58:11,802 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:58:37,519 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:58:49,210 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:59:25,784 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 00:59:48,534 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:00:21,621 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:00:43,189 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:00:52,048 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:01:04,828 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:01:19,160 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:01:36,939 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:02:00,874 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:02:10,509 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:02:31,531 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:03:08,122 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:03:08,683 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:03:32,507 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg
+2026-04-14 01:03:44,271 WARNING: 404: http://127.0.0.1:5000/static/uploads/tacos_dorados.jpg

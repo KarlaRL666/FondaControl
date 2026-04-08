@@ -1,44 +1,158 @@
 {% extends "base.html" %}
 {% block title %}Recetas{% endblock %}
 
-{% block content %}
-<h1>Recetas</h1>
+{% block head %}
+<style>
+    .recipes-shell { max-width: 1200px; margin: 0 auto; }
+    .recipes-hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .recipes-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .recipes-kpi { border: 1px solid #dce8e2; border-radius: 12px; background: #fff; padding: 10px 12px; }
+    .recipes-kpi .kpi-label { font-size: 12px; color: #557567; text-transform: uppercase; letter-spacing: .04em; }
+    .recipes-kpi .kpi-value { font-size: 1.35rem; font-weight: 800; color: #1d3f33; line-height: 1.1; }
+    .recipes-toolbar { border: 1px solid #dce8e2; border-radius: 12px; background: #fff; padding: 10px; margin-bottom: 14px; }
+    .recipe-card { border: 1px solid #dce8e2; border-radius: 14px; background: #fff; height: 100%; }
+    .recipe-badge { font-size: 11px; border-radius: 999px; padding: 4px 8px; }
+    .recipe-meta { font-size: 12px; color: #587369; }
+    .ingredient-chip { display: inline-block; font-size: 11px; background: #f1f7f4; border: 1px solid #dce8e2; color: #2d5647; border-radius: 999px; padding: 3px 8px; margin: 0 6px 6px 0; }
+    @media (max-width: 768px) {
+        .recipes-shell { padding: 0 4px; }
+        .recipes-hero { flex-direction: column; align-items: flex-start; }
+        .recipes-kpis { grid-template-columns: 1fr 1fr; }
+        .recipes-toolbar .row > * { width: 100%; }
+    }
+    @media (max-width: 480px) {
+        .recipes-kpis { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
 
-<table class="data-table">
-	<thead>
-		<tr>
-			<th>ID</th>
-			<th>Producto</th>
-			<th>Estado</th>
-			<th>Fecha</th>
-			<th>Ingredientes</th>
-			<th>Acciones</th>
-		</tr>
-	</thead>
-	<tbody>
-		{% for receta in recetas %}
-		<tr>
-			<td>{{ receta.id_receta }}</td>
-			<td>{{ receta.producto_nombre }}</td>
-			<td>{{ 'Activa' if receta.estado else 'Inactiva' }}</td>
-			<td>{{ receta.fecha_creacion.strftime('%d/%m/%Y %H:%M') if receta.fecha_creacion else 'N/A' }}</td>
-			<td>
-				{% if receta.detalles %}
-					{% for detalle in receta.detalles %}
-						<div>{{ detalle.materia_nombre }} - {{ detalle.cantidad }}</div>
-					{% endfor %}
-				{% else %}
-					Sin ingredientes
-				{% endif %}
-			</td>
-			<td>
-				<a class="btn btn-view" href="{{ url_for('recetas.ver', id_receta=receta.id_receta) }}">Ver</a>
-				<a class="btn btn-edit" href="{{ url_for('recetas.editar', id_receta=receta.id_receta) }}">Editar</a>
-			</td>
-		</tr>
-		{% else %}
-		<tr><td colspan="6" style="text-align:center;">No hay recetas registradas.</td></tr>
-		{% endfor %}
-	</tbody>
-</table>
+{% block content %}
+<div class="recipes-shell">
+    <div class="recipes-hero">
+        <div>
+            <h1 class="mb-1">Recetas</h1>
+            <p class="text-muted mb-0">Administra rendimiento, producción e ingredientes de cada receta.</p>
+        </div>
+    </div>
+
+    {% set total = recetas|length %}
+    {% set ns = namespace(act=0, ina=0, con_ings=0) %}
+    {% for receta in recetas %}
+        {% if receta.estado %}{% set ns.act = ns.act + 1 %}{% else %}{% set ns.ina = ns.ina + 1 %}{% endif %}
+        {% if receta.detalles %}{% set ns.con_ings = ns.con_ings + 1 %}{% endif %}
+    {% endfor %}
+
+    <div class="recipes-kpis">
+        <div class="recipes-kpi"><div class="kpi-label">Total</div><div class="kpi-value">{{ total }}</div></div>
+        <div class="recipes-kpi"><div class="kpi-label">Activas</div><div class="kpi-value">{{ ns.act }}</div></div>
+        <div class="recipes-kpi"><div class="kpi-label">Inactivas</div><div class="kpi-value">{{ ns.ina }}</div></div>
+        <div class="recipes-kpi"><div class="kpi-label">Con ingredientes</div><div class="kpi-value">{{ ns.con_ings }}</div></div>
+    </div>
+
+    <div class="recipes-toolbar">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <input id="searchReceta" type="text" class="form-control" placeholder="Buscar por producto o ingrediente...">
+            </div>
+            <div class="col-6 col-md-3">
+                <select id="estadoReceta" class="form-select">
+                    <option value="all">Todos los estados</option>
+                    <option value="active">Activas</option>
+                    <option value="inactive">Inactivas</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-4 text-md-end">
+                <small class="text-muted">Visibles: <span id="visibleRecetas">{{ total }}</span></small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3" id="recipesGrid">
+        {% for receta in recetas %}
+        <div class="col-12 col-md-6 col-xl-4 receta-item"
+             data-producto="{{ (receta.producto_nombre or '')|lower }}"
+             data-estado="{{ 'active' if receta.estado else 'inactive' }}"
+             data-ingredientes="{% for d in receta.detalles %}{{ (d.materia_nombre or '')|lower }} {% endfor %}">
+            <article class="recipe-card p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="mb-1">#{{ receta.id_receta }} · {{ receta.producto_nombre }}</h6>
+                        <div class="recipe-meta">{{ receta.fecha_creacion.strftime('%d/%m/%Y %H:%M') if receta.fecha_creacion else 'Sin fecha' }}</div>
+                    </div>
+                    {% if receta.estado %}
+                    <span class="recipe-badge bg-success-subtle text-success border">Activa</span>
+                    {% else %}
+                    <span class="recipe-badge bg-danger-subtle text-danger border">Inactiva</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-2">
+                    <div class="recipe-meta"><strong>Produce:</strong> {{ '%.2f'|format(receta.cantidad_produccion or 0) }} {{ receta.unidad_produccion or 'pz' }}</div>
+                    <div class="recipe-meta"><strong>Rendimiento:</strong> {{ '%.2f'|format(receta.rendimiento or 0) }}</div>
+                </div>
+
+                <div class="mb-2">
+                    {% if receta.detalles %}
+                        {% for d in receta.detalles[:4] %}
+                        <span class="ingredient-chip">{{ d.materia_nombre }} · {{ '%.2f'|format(d.cantidad or 0) }} {{ d.unidad_detalle or '' }}</span>
+                        {% endfor %}
+                        {% if receta.detalles|length > 4 %}
+                        <span class="ingredient-chip">+{{ receta.detalles|length - 4 }} más</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted small">Sin ingredientes registrados.</span>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <a class="btn btn-view btn-sm" href="{{ url_for('recetas.ver', id_receta=receta.id_receta) }}">Ver</a>
+                    <a class="btn btn-edit btn-sm" href="{{ url_for('recetas.editar', id_receta=receta.id_receta) }}">Editar</a>
+                </div>
+            </article>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="recetasEmpty" class="alert alert-info mt-3" style="display:none;">No hay recetas que coincidan con los filtros.</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchReceta');
+    const estadoSelect = document.getElementById('estadoReceta');
+    const cards = Array.from(document.querySelectorAll('.receta-item'));
+    const visibleCount = document.getElementById('visibleRecetas');
+    const emptyAlert = document.getElementById('recetasEmpty');
+
+    function applyFilters() {
+        const term = (searchInput.value || '').trim().toLowerCase();
+        const estado = estadoSelect.value;
+        let visibles = 0;
+
+        cards.forEach((card) => {
+            const producto = card.dataset.producto || '';
+            const ingredientes = card.dataset.ingredientes || '';
+            const estadoCard = card.dataset.estado || 'inactive';
+
+            const matchesSearch = !term || producto.includes(term) || ingredientes.includes(term);
+            const matchesEstado = estado === 'all' || estado === estadoCard;
+            const show = matchesSearch && matchesEstado;
+
+            card.style.display = show ? '' : 'none';
+            if (show) {
+                visibles += 1;
+            }
+        });
+
+        visibleCount.textContent = String(visibles);
+        emptyAlert.style.display = visibles > 0 ? 'none' : '';
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    estadoSelect.addEventListener('change', applyFilters);
+    applyFilters();
+});
+</script>
 {% endblock %}

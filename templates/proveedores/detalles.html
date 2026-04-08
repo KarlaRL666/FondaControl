@@ -2,176 +2,124 @@
 {% block title %}Detalles de Proveedor{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/proveedores.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="user-container">
-
-    <div class="user-card">
-
-        <!-- Header -->
-        <div class="user-header">
-            <div class="user-header-content">
-                <div class="avatar">
-                    {{ (proveedor.nombre[0] if proveedor.nombre else 'U') | upper }}
-                </div>
-
-                <div class="user-info">
-                    <h1>
-                        {{ proveedor.nombre }} {{ proveedor.apellido_paterno or '' }} {{ proveedor.apellido_materno or '' }}
-                    </h1>
-                </div>
+<section class="providers-detail-page">
+    <header class="providers-detail-hero">
+        <div class="providers-detail-identity">
+            <div class="providers-detail-avatar">{{ (proveedor.nombre[0] if proveedor.nombre else 'U') | upper }}</div>
+            <div>
+                <span class="providers-eyebrow"><i class="bi bi-person-vcard"></i> Ficha de proveedor</span>
+                <h1>{{ proveedor.nombre }} {{ proveedor.apellido_paterno or '' }} {{ proveedor.apellido_materno or '' }}</h1>
+                <p>Información comercial, contacto y compras históricas del proveedor.</p>
             </div>
         </div>
+        <div class="providers-detail-actions">
+            <a href="{{ url_for('proveedores.editar', id_proveedor=proveedor.id_proveedor) }}" class="providers-btn providers-btn-primary"><i class="bi bi-pencil"></i> Editar</a>
+            <a href="{{ url_for('proveedores.index') }}" class="providers-btn providers-btn-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </header>
 
-        <!-- Info -->
-        <div class="user-body">
+    <section class="providers-detail-grid">
+        <article class="providers-detail-card">
+            <span class="providers-detail-label"><i class="bi bi-circle-fill"></i> Estado</span>
+            <strong class="{{ 'is-active' if proveedor.estado else 'is-inactive' }}">{{ 'Activo' if proveedor.estado else 'Inactivo' }}</strong>
+        </article>
+        <article class="providers-detail-card">
+            <span class="providers-detail-label"><i class="bi bi-tags"></i> Categoría</span>
+            <strong>{{ proveedor.categoria_proveedor or 'No disponible' }}</strong>
+        </article>
+        <article class="providers-detail-card">
+            <span class="providers-detail-label"><i class="bi bi-envelope"></i> Correo</span>
+            <strong>{{ proveedor.correo or 'No disponible' }}</strong>
+        </article>
+        <article class="providers-detail-card">
+            <span class="providers-detail-label"><i class="bi bi-telephone"></i> Teléfono</span>
+            <strong>{{ proveedor.telefono or 'No disponible' }}</strong>
+        </article>
+        <article class="providers-detail-card providers-detail-card-wide">
+            <span class="providers-detail-label"><i class="bi bi-geo-alt"></i> Dirección</span>
+            <strong>{{ proveedor.direccion or 'No disponible' }}</strong>
+        </article>
 
-            <!-- Estado -->
-            <div class="user-item">
-                <div class="icon green">
-                    <i class="bi bi-circle-fill"></i>
-                </div>
-                <div>
-                    <span>ESTADO</span>
-                    <p class="{{ 'activo' if proveedor.estado else 'inactivo' }}">
-                        <span class="dot"></span>
-                        {{ 'Activo' if proveedor.estado else 'Inactivo' }}
-                    </p>
-                </div>
+        <article class="providers-detail-card providers-compra-card">
+            <span class="providers-detail-label"><i class="bi bi-receipt-cutoff"></i> Compras del proveedor</span>
+            {% if proveedor.compras %}
+            <div class="providers-detail-table table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>No. Compra</th>
+                            <th>Fecha</th>
+                            <th>Entrega</th>
+                            <th>Estado</th>
+                            <th>Total</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compra in proveedor.compras %}
+                        <tr>
+                            <td>#{{ compra.id_compra }}</td>
+                            <td>{{ compra.fecha.strftime('%d/%m/%Y') if compra.fecha else 'Sin fecha' }}</td>
+                            <td>{{ compra.fecha_entrega.strftime('%d/%m/%Y') if compra.fecha_entrega else 'Sin fecha' }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if compra.estado == 'Completada' or compra.estado == 'Completado' %}bg-success
+                                    {% elif compra.estado == 'En Camino' %}bg-info
+                                    {% elif compra.estado == 'Cancelada' or compra.estado == 'Cancelado' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ compra.estado }}
+                                </span>
+                            </td>
+                            <td>${{ '%.2f'|format(compra.total or 0) }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#compraDetalle{{ compra.id_compra }}" aria-expanded="false" aria-controls="compraDetalle{{ compra.id_compra }}">
+                                    Ver detalle
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="collapse" id="compraDetalle{{ compra.id_compra }}">
+                            <td colspan="6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <p class="mb-2"><strong>Método de pago:</strong> {{ compra.metodo_pago or 'No registrado' }}</p>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Materia prima</th>
+                                                    <th>Cantidad</th>
+                                                    <th>Precio unitario</th>
+                                                    <th>Subtotal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for detalle in compra.detalles %}
+                                                <tr>
+                                                    <td>{{ detalle.materia }}</td>
+                                                    <td>{{ detalle.cantidad }}</td>
+                                                    <td>${{ '%.2f'|format(detalle.precio_u or 0) }}</td>
+                                                    <td>${{ '%.2f'|format(detalle.subtotal or 0) }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-
-            <!-- Correo -->
-            <div class="user-item">
-                <div class="icon blue">
-                    <i class="bi bi-envelope"></i>
-                </div>
-                <div>
-                    <span>CORREO</span>
-                    <p>{{ proveedor.correo or 'No disponible' }}</p>
-                </div>
-            </div>
-
-            <div class="user-item">
-                <div class="icon gray">
-                    <i class="bi bi-tags"></i>
-                </div>
-                <div>
-                    <span>CATEGORÍA PROVEEDOR</span>
-                    <p>{{ proveedor.categoria_proveedor or 'No disponible' }}</p>
-                </div>
-            </div>
-
-            <!-- Teléfono -->
-            <div class="user-item">
-                <div class="icon yellow">
-                    <i class="bi bi-telephone"></i>
-                </div>
-                <div>
-                    <span>TELÉFONO</span>
-                    <p>{{ proveedor.telefono or 'No disponible' }}</p>
-                </div>
-            </div>
-
-            <!-- Dirección -->
-            <div class="user-item">
-                <div class="icon gray">
-                    <i class="bi bi-geo-alt"></i>
-                </div>
-                <div>
-                    <span>DIRECCIÓN</span>
-                    <p>{{ proveedor.direccion or 'No disponible' }}</p>
-                </div>
-            </div>
-
-            <div class="user-item" style="grid-column: 1 / -1; align-items: flex-start;">
-                <div class="icon blue">
-                    <i class="bi bi-receipt-cutoff"></i>
-                </div>
-                <div style="width: 100%;">
-                    <span>COMPRAS DEL PROVEEDOR</span>
-                    {% if proveedor.compras %}
-                        <div class="table-responsive mt-3">
-                            <table class="table table-striped align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>No. Compra</th>
-                                        <th>Fecha</th>
-                                        <th>Entrega</th>
-                                        <th>Estado</th>
-                                        <th>Total</th>
-                                        <th>Detalle</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for compra in proveedor.compras %}
-                                        <tr>
-                                            <td>#{{ compra.id_compra }}</td>
-                                            <td>{{ compra.fecha.strftime('%d/%m/%Y') if compra.fecha else 'Sin fecha' }}</td>
-                                            <td>{{ compra.fecha_entrega.strftime('%d/%m/%Y') if compra.fecha_entrega else 'Sin fecha' }}</td>
-                                            <td>
-                                                <span class="badge
-                                                    {% if compra.estado == 'Completada' or compra.estado == 'Completado' %}bg-success
-                                                    {% elif compra.estado == 'En Camino' %}bg-info
-                                                    {% elif compra.estado == 'Cancelada' or compra.estado == 'Cancelado' %}bg-danger
-                                                    {% else %}bg-secondary{% endif %}">
-                                                    {{ compra.estado }}
-                                                </span>
-                                            </td>
-                                            <td>${{ '%.2f'|format(compra.total or 0) }}</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#compraDetalle{{ compra.id_compra }}" aria-expanded="false" aria-controls="compraDetalle{{ compra.id_compra }}">
-                                                    Ver detalle
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr class="collapse" id="compraDetalle{{ compra.id_compra }}">
-                                            <td colspan="6">
-                                                <div class="p-3 bg-light rounded-3">
-                                                    <p class="mb-2"><strong>Método de pago:</strong> {{ compra.metodo_pago or 'No registrado' }}</p>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm mb-0">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Materia prima</th>
-                                                                    <th>Cantidad</th>
-                                                                    <th>Precio unitario</th>
-                                                                    <th>Subtotal</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {% for detalle in compra.detalles %}
-                                                                    <tr>
-                                                                        <td>{{ detalle.materia }}</td>
-                                                                        <td>{{ detalle.cantidad }}</td>
-                                                                        <td>${{ '%.2f'|format(detalle.precio_u or 0) }}</td>
-                                                                        <td>${{ '%.2f'|format(detalle.subtotal or 0) }}</td>
-                                                                    </tr>
-                                                                {% endfor %}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <p class="mt-2 mb-0 text-muted">Este proveedor todavía no tiene compras registradas.</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <a href="{{ url_for('proveedores.index') }}" class="btn volver-btn">
-                Volver
-            </a>
-
-
-    </div>
-</div>
+            {% else %}
+            <p class="mt-3 mb-0 text-muted">Este proveedor todavía no tiene compras registradas.</p>
+            {% endif %}
+        </article>
+    </section>
+</section>
 {% endblock %}
 
 {% block scripts %}

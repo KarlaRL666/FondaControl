@@ -1,62 +1,420 @@
 {% extends "base.html" %}
+{% from "_macros.html" import render_form_field %}
 {% block title %}Inicio{% endblock %}
 
 {% block head %}
 <link href="{{ url_for('static', filename='style/pages/tienda.css') }}" rel="stylesheet">
-<link href="{{ url_for('static', filename='style/pages/clientes.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='style/components/carousel.css') }}" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 {% endblock %}
-
 {% block content %}
-<div class="cliente-container">
-<section id="inicio" class="hero">
-    <div class="container text-center hero-content">
-        <h1 class="display-2 fw-bold mb-3">Casa Gourmet</h1>
-        <p class="lead mb-4">Sabores caseros que enamoran</p>
+<section class="hero ">
+    <div class="hero-overlay">
+        <h1>¡Bienvenido a Casa Gourmet!</h1>
+        <h2>Comida casera deliciosa, ven y disfruta del sabor auténtico de México</h2>
+        
+        {% if productos %}
+        <div class="hero-carousel-wrapper">
+            <div class="hero-carousel-section-title">
+                <i class="bi bi-star-fill me-2" style="color: #f8c44f;"></i>Conoce nuestros productos más populares
+            </div>
+            <div class="hero-carousel-container">
+                {% for producto in productos[:12] %}
+                <div class="hero-carousel-item">
+                    <div class="hero-carousel-item-image">
+                        {% if producto.imagen %}
+                            <img src="{{ url_for('static', filename=producto.imagen) }}" 
+                                 alt="{{ producto.nombre }}"
+                                 loading="lazy"
+                                 title="{{ producto.nombre }}">
+                        {% else %}
+                            <div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                                <i class="bi bi-image" style="font-size: 2rem; color: #ccc;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="hero-carousel-item-content">
+                        <h4 class="hero-carousel-item-name">{{ producto.nombre }}</h4>
+                        <p class="hero-carousel-item-price">${{ '%.2f'|format(producto.precio) }}</p>
+                        {% if producto.total_calificaciones and producto.total_calificaciones > 0 %}
+                            <div class="hero-carousel-item-rating" title="{{ producto.total_calificaciones }} calificaciones">
+                                <span class="hero-carousel-item-rating-stars">
+                                    {% for _ in range(producto.calificacion_promedio|int) %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% endfor %}
+                                </span>
+                                <span>{{ '%.1f'|format(producto.calificacion_promedio) }} ({{ producto.total_calificaciones }})</span>
+                            </div>
+                        {% else %}
+                            <div class="hero-carousel-item-rating">
+                                <span class="hero-carousel-item-rating-stars"><i class="bi bi-star"></i></span>
+                                <span>Sin calificaciones</span>
+                            </div>
+                        {% endif %}
+                        {% if current_user.is_authenticated %}
+                        <form method="POST" action="{{ url_for('tienda.agregar_carrito', id=producto.id) }}" class="m-0" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-add-cart" title="Agregar al carrito">
+                    <i class="bi bi-cart-plus"></i>
+                    Agregar al carrito
+                </button>
+            </form>
+                         {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                <i class="bi bi-person"></i>
+                Iniciar sesión para comprar
+            </a>
+                        {% endif %}
+                       <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#productoDetalleModal{{ producto.id }}">
+                <i class="bi bi-eye"></i> Ver detalles
+            </button>
+                    </div>
+                </div>
+                {% endfor %}
+                {% for producto in productos[:12] %}
+                <div class="hero-carousel-item">
+                    <div class="hero-carousel-item-image">
+                        {% if producto.imagen %}
+                            <img src="{{ url_for('static', filename=producto.imagen) }}" 
+                                 alt="{{ producto.nombre }}"
+                                 loading="lazy"
+                                 title="{{ producto.nombre }}">
+                        {% else %}
+                            <div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                                <i class="bi bi-image" style="font-size: 2rem; color: #ccc;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="hero-carousel-item-content">
+                        <h4 class="hero-carousel-item-name">{{ producto.nombre }}</h4>
+                        <p class="hero-carousel-item-price">${{ '%.2f'|format(producto.precio) }}</p>
+                        {% if producto.total_calificaciones and producto.total_calificaciones > 0 %}
+                            <div class="hero-carousel-item-rating" title="{{ producto.total_calificaciones }} calificaciones">
+                                <span class="hero-carousel-item-rating-stars">
+                                    {% for _ in range(producto.calificacion_promedio|int) %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% endfor %}
+                                </span>
+                                <span>{{ '%.1f'|format(producto.calificacion_promedio) }} ({{ producto.total_calificaciones }})</span>
+                            </div>
+                        {% else %}
+                            <div class="hero-carousel-item-rating">
+                                <span class="hero-carousel-item-rating-stars"><i class="bi bi-star"></i></span>
+                                <span>Sin calificaciones</span>
+                            </div>
+                        {% endif %}
+                        {% if current_user.is_authenticated %}
+                        <form method="POST" action="{{ url_for('tienda.agregar_carrito', id=producto.id) }}" class="m-0" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-add-cart" title="Agregar al carrito">
+                    <i class="bi bi-cart-plus"></i>
+                    Agregar al carrito
+                </button>
+            </form>
+                         {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                <i class="bi bi-person"></i>
+                Iniciar sesión para comprar
+            </a>
+                        {% endif %}
+                       <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#productoDetalleModal{{ producto.id }}">
+                <i class="bi bi-eye"></i> Ver detalles
+            </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </section>
 
-<!-- Cards horizontales flotantes -->
-<section class="container my-5">
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="floating-card horizontal-card">
-                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=180&fit=crop" 
-                     alt="Plato principal" 
-                     class="horizontal-card-img">
-                <div class="horizontal-card-body">
-                    <h5 class="card-title">Platos Principales</h5>
-                    <p class="card-text text-muted">Los mejores sabores caseros con ingredientes frescos.</p>
-                    <span class="card-price">Desde $120</span>
+{% if productos %}
+    {% for producto in productos[:12] %}
+    <div class="modal fade" id="productoDetalleModal{{ producto.id }}" tabindex="-1" aria-labelledby="productoDetalleModalLabel{{ producto.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productoDetalleModalLabel{{ producto.id }}">{{ producto.nombre }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            {% if producto.imagen %}
+                                <img src="{{ url_for('static', filename=producto.imagen) }}" alt="{{ producto.nombre }}" class="img-fluid rounded" loading="lazy">
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center rounded bg-light" style="min-height: 220px;">
+                                    <i class="bi bi-image" style="font-size: 2rem; color: #999;"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-7">
+                            <p class="mb-2"><strong>Precio:</strong> ${{ '%.2f'|format(producto.precio) }}</p>
+                            <p class="mb-2"><strong>Categoría:</strong> {{ producto.categoria or 'Sin categoría' }}</p>
+                            {% if producto.total_calificaciones and producto.total_calificaciones > 0 %}
+                                <p class="mb-2"><strong>Calificación:</strong> {{ '%.1f'|format(producto.calificacion_promedio) }} / 5 ({{ producto.total_calificaciones }} reseñas)</p>
+                            {% else %}
+                                <p class="mb-2"><strong>Calificación:</strong> Sin calificaciones</p>
+                            {% endif %}
+                            <p class="mb-2"><strong>Descripción:</strong></p>
+                            <p class="text-muted">{{ producto.descripcion or 'Sin descripción disponible.' }}</p>
+
+                            {% if producto.ingredientes %}
+                                <p class="mb-2 mt-3"><strong>Ingredientes:</strong></p>
+                                <ul class="mb-0">
+                                    {% for ing in producto.ingredientes %}
+                                        <li>{{ ing.nombre }}{% if ing.cantidad %} ({{ ing.cantidad }} {{ ing.unidad or '' }}){% endif %}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    {% if current_user.is_authenticated and current_user.id_rol in [3, 4] %}
+                    <form method="POST" action="{{ url_for('tienda.agregar_carrito', id=producto.id) }}" class="m-0" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-cart-plus"></i> Agregar al carrito
+                        </button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                        <i class="bi bi-person"></i> Iniciar sesión para comprar
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            <div class="floating-card horizontal-card">
-                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=180&fit=crop" 
-                     alt="Pizzas" 
-                     class="horizontal-card-img">
-                <div class="horizontal-card-body">
-                    <h5 class="card-title">Pizzas Artesanales</h5>
-                    <p class="card-text text-muted">Masa madre y ingredientes de primera calidad.</p>
-                    <span class="card-price">Desde $180</span>
-                </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<section id="calificaciones" class="calificaciones-section section section-dark">
+        <h1><i class="bi bi-star-fill"></i> Calificaciones de Clientes</h1>
+    <div class="about-container">
+        {% if calificaciones_cliente %}
+        <div class="calificaciones-grid">
+            {% for c in calificaciones_cliente %}
+            <article class="calificacion-card">
+                <h4>
+                    <span>{{ c.cliente or 'Cliente' }}</span>
+                    <span class="calificacion-star">
+                        {% for i in range(c.calificacion|int) %}
+                            <i class="bi bi-star-fill" style="color: #e3bf0d;"></i>
+                        {% endfor %}
+                    </span>
+                    <span style="color: #e3bf0d; font-weight: 800;">{{ c.calificacion }}/5</span>
+                </h4>
+                <small><i class="bi bi-calendar"></i> {{ c.fecha }}</small>
+                <p>{{ c.comentario or 'Sin comentario' }}</p>
+                {% if c.productos %}
+                <ul class="calificacion-productos">
+                    {% for p in c.productos %}
+                    <li>{{ p.nombre }}: {{ p.calificacion }}/5</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="calificacion-empty"><i class="bi bi-info-circle"></i> Aún no tienes calificaciones registradas.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section id="nosotros" class="about">
+    <div class="about-container about-mvv-container">
+        <div class="about-text about-mvv-head">
+            <h2>
+                <i class="bi bi-info-circle"></i> Nosotros
+            </h2>
+        </div>
+
+        <div class="about-mvv-card about-mvv-intro">
+            <p>
+                En Casa Gourmet trabajamos para ofrecer una experiencia cálida, organizada y con sabor casero en cada pedido.
+            </p>
+            <img src="{{ url_for('static', filename='imagen/logoFonda.jpg') }}" alt="Nuestra historia" class="about-mvv-img">
+        </div>
+
+        <div class="about-mvv-grid">
+            <article class="about-mvv-card">
+                <h3>Misión</h3>
+                <p>
+                    Brindar alimentos caseros de calidad, preparados con ingredientes frescos, ofreciendo un servicio accesible, rápido y confiable
+                </p>
+            </article>
+
+            <article class="about-mvv-card">
+                <h3>Visión</h3>
+                <p>
+                    Ser un restaurante reconocido por su calidad, organización y uso de tecnología para mejorar la experiencia del cliente
+                </p>
+            </article>
+
+            <article class="about-mvv-card">
+                <h3>Valores</h3>
+                <p>
+                    Calidad, Responsabilidad, Honestidad, Higiene, Servicio al cliente, Innovación
+                </p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<!-- SECCIÓN CONTACTO -->
+<section id="contacto" class="contact-section">
+    {% set email_contacto = contacto_email or 'karlalizbethmtzl@gmail.com' %}
+    {% set telefono_contacto = contacto_telefono or '+524779197919' %}
+    {% set telefono_contacto_mostrar = contacto_telefono_mostrar or '+52 477 919 7919' %}
+    <div class="about-container">
+        <h2><i class="bi bi-telephone-fill"></i> Contáctanos</h2>
+        {% if contacto_enviado == '1' %}
+        <div class="contacto-banner contacto-banner-success" id="contactoConfirmacion">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>
+                <strong>Mensaje enviado correctamente.</strong>
+                <p>Te responderemos pronto por el correo que proporcionaste.</p>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            <div class="floating-card horizontal-card">
-                <img src="https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=200&h=180&fit=crop" 
-                     alt="Bebidas" 
-                     class="horizontal-card-img">
-                <div class="horizontal-card-body">
-                    <h5 class="card-title">Bebidas Especiales</h5>
-                    <p class="card-text text-muted">Cócteles, vinos y bebidas refrescantes.</p>
-                    <span class="card-price">Desde $45</span>
+        {% elif contacto_enviado == '0' %}
+        <div class="contacto-banner contacto-banner-warning" id="contactoConfirmacion">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+                <strong>Mensaje recibido.</strong>
+                <p>No se pudo enviar por correo, pero quedó guardado para seguimiento.</p>
+            </div>
+        </div>
+        {% endif %}
+        <div class="contact-wrapper">
+           
+            <div class="contact-info card contact-card">
+                <h3><i class="bi bi-info-circle"></i> Envíanos un mensaje</h3>
+                <div class="contact-info-item">
+                    <div class="contact-info-icon">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <div class="contact-info-content">
+                        <h3>Ubicación</h3>
+                        <p>La Madero #233, León, Guanajuato</p>
+                    </div>
+                </div>
+
+                <div class="contact-info-item">
+                    <div class="contact-info-icon">
+                        <i class="bi bi-telephone-fill"></i>
+                    </div>
+                    <div class="contact-info-content">
+                        <h3>Teléfono</h3>
+                        <p><a href="tel:{{ telefono_contacto }}" style="color: inherit; text-decoration: none;">{{ telefono_contacto_mostrar }}</a></p>
+                    </div>
+                </div>
+
+                <div class="contact-info-item">
+                    <div class="contact-info-icon">
+                        <i class="bi bi-envelope-fill"></i>
+                    </div>
+                    <div class="contact-info-content">
+                        <h3>Email</h3>
+                        <p><a href="mailto:{{ email_contacto }}" style="color: inherit; text-decoration: none;">{{ email_contacto }}</a></p>
+                    </div>
+                </div>
+
+                <div class="contact-info-item">
+                    <div class="contact-info-icon">
+                        <i class="bi bi-clock-fill"></i>
+                    </div>
+                    <div class="contact-info-content">
+                        <h3>Horarios</h3>
+                        <p>Lunes - Viernes: 10:00 - 22:00<br>Sábado - Domingo: 12:00 - 23:00</p>
+                    </div>
                 </div>
             </div>
+
+            <!-- Formulario de Contacto -->
+            <form class="contact-form" action="{{ url_for('tienda.enviar_contacto') }}" method="POST" novalidate>
+                <h3><i class="bi bi-chat-dots-fill"></i> Envíanos un mensaje</h3>
+                {{ contacto_form.hidden_tag() }}
+
+                <div class="form-grid">
+                    {{ render_form_field(contacto_form.nombre, wrapper_class='form-group', placeholder='Tu nombre') }}
+                    {{ render_form_field(contacto_form.email, wrapper_class='form-group', placeholder='tu@email.com') }}
+                    {{ render_form_field(contacto_form.telefono, wrapper_class='form-group', placeholder='+1 (234) 567-8900') }}
+                    {{ render_form_field(contacto_form.asunto, wrapper_class='form-group', placeholder='¿Cuál es tu consulta?') }}
+                </div>
+
+                {{ render_form_field(contacto_form.mensaje, wrapper_class='form-group form-group-full', placeholder='Cuéntanos más...') }}
+
+                <button type="submit" class="btn-submit">
+                    <i class="bi bi-send-fill"></i> Enviar Mensaje
+                </button>
+            </form>
         </div>
     </div>
 </section>
 {% endblock %}
 
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const contactoConfirmacion = document.getElementById('contactoConfirmacion');
+        if (contactoConfirmacion) {
+            contactoConfirmacion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        const carousels = document.querySelectorAll('.carousel-products');
+        
+        carousels.forEach(carousel => {
+            carousel.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const scrollAmount = 200;
+                carousel.scrollLeft += e.deltaY > 0 ? scrollAmount : -scrollAmount;
+            });
+
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            carousel.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+
+            carousel.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+
+            function handleSwipe() {
+                const difference = touchStartX - touchEndX;
+                const scrollAmount = 150;
+                
+                if (Math.abs(difference) > 50) {
+                    carousel.scrollLeft += difference > 0 ? scrollAmount : -scrollAmount;
+                }
+            }
+
+            updateScrollIndicator(carousel);
+            carousel.addEventListener('scroll', () => updateScrollIndicator(carousel));
+        });
+
+        function updateScrollIndicator(carousel) {
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+            const isDragable = maxScroll > 0;
+            carousel.style.cursor = isDragable ? 'grab' : 'default';
+        }
+
+        const productCards = document.querySelectorAll('.product-card-carousel');
+        productCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.zIndex = '10';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.zIndex = 'auto';
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -34,8 +34,10 @@
         <input type="date" class="search" id="filtroFechaSolicitud" title="Filtrar por fecha de solicitud">
         <input type="date" class="search" id="filtroFechaEntrega" title="Filtrar por fecha de entrega">
         <select class="filter" id="filtroEstadoCompra">
+            <option value="pendientes" selected>Solicitadas y pendientes</option>
             <option value="todas">Todos los estados</option>
             <option value="solicitada">Solicitadas</option>
+            <option value="en_camino">En camino</option>
             <option value="completada">Completadas</option>
             <option value="cancelada">Canceladas</option>
         </select>
@@ -55,6 +57,7 @@
             <th>Productos</th>
             <th>Cantidad solicitada</th>
             <th>Stock actual</th>
+            <th>Progreso</th>
             <th>Estado Compra</th>
             <th>Acciones</th>
         </tr>
@@ -109,6 +112,12 @@
                     {% endfor %}
                 </ul>
             </td>
+            <td style="min-width: 170px;">
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success js-progress" role="progressbar" style="width: 0" data-progress="{{ compra.progreso or 0 }}"></div>
+                </div>
+                <small>{{ compra.progreso or 0 }}%</small>
+            </td>
             <td>
                 {% if compra.estado == "Completado" %}
                     <span class="badge bg-success">
@@ -139,11 +148,11 @@
                     <a href="{{ url_for('compras.ver', id=compra.id_compra) }}" class="btn btn-outline-primary btn-sm">
                         Ver detalles
                     </a>
-
-                    {% if compra.estado not in ["Completada", "Completado", "Cancelado"] %}
-                        <a href="{{ url_for('compras.ver', id=compra.id_compra) }}" class="btn btn-success btn-sm">
-                            Completar
-                        </a>
+                    {% if current_user.id_rol == 1 and compra.estado in ['Solicitada', 'En Camino', 'En Proceso'] %}
+                    <form method="POST" action="{{ url_for('compras.eliminar', id=compra.id_compra) }}" class="js-delete-request-form" data-confirm-title="¿Eliminar solicitud de compra?" data-confirm-text="Esta acción quitará la solicitud y sus líneas pendientes.">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar solicitud</button>
+                    </form>
                     {% endif %}
                 </div>
             </td>
@@ -174,6 +183,14 @@
         </div>
 
         <div class="compra-mobile-block">
+            <span class="compra-mobile-label">Progreso</span>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-success js-progress" role="progressbar" style="width: 0" data-progress="{{ compra.progreso or 0 }}"></div>
+            </div>
+            <small>{{ compra.progreso or 0 }}%</small>
+        </div>
+
+        <div class="compra-mobile-block">
             <span class="compra-mobile-label">Materias primas</span>
             <ul class="compra-mobile-list">
                 {% for m in compra.materias_primas[:3] %}
@@ -190,8 +207,11 @@
 
         <div class="compra-mobile-actions">
             <a href="{{ url_for('compras.ver', id=compra.id_compra) }}" class="btn btn-outline-primary btn-sm">Ver detalles</a>
-            {% if compra.estado not in ['Completada', 'Completado', 'Cancelado'] %}
-                <a href="{{ url_for('compras.ver', id=compra.id_compra) }}" class="btn btn-success btn-sm">Completar</a>
+            {% if current_user.id_rol == 1 and compra.estado in ['Solicitada', 'En Camino', 'En Proceso'] %}
+            <form method="POST" action="{{ url_for('compras.eliminar', id=compra.id_compra) }}" class="js-delete-request-form" data-confirm-title="¿Eliminar solicitud de compra?" data-confirm-text="Esta acción quitará la solicitud y sus líneas pendientes.">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+            </form>
             {% endif %}
         </div>
     </article>
@@ -229,7 +249,9 @@ function aplicarFiltrosCompras() {
         const contenidoFila = normalizarTexto(fila.textContent);
 
         const coincideTexto = !textoBusqueda || contenidoFila.includes(textoBusqueda);
-        const coincideEstado = estadoSeleccionado === 'todas' || estadoFila === estadoSeleccionado;
+        const coincideEstado = estadoSeleccionado === 'todas'
+            || estadoFila === estadoSeleccionado
+            || (estadoSeleccionado === 'pendientes' && ['solicitada', 'en_camino', 'en_proceso'].includes(estadoFila));
         const coincideSolicitud = !fechaSolicitud || fechaSolicitudFila === fechaSolicitud;
         const coincideEntrega = !fechaEntrega || fechaEntregaFila === fechaEntrega;
 
@@ -243,7 +265,9 @@ function aplicarFiltrosCompras() {
         const contenidoFila = normalizarTexto(card.textContent);
 
         const coincideTexto = !textoBusqueda || contenidoFila.includes(textoBusqueda);
-        const coincideEstado = estadoSeleccionado === 'todas' || estadoFila === estadoSeleccionado;
+        const coincideEstado = estadoSeleccionado === 'todas'
+            || estadoFila === estadoSeleccionado
+            || (estadoSeleccionado === 'pendientes' && ['solicitada', 'en_camino', 'en_proceso'].includes(estadoFila));
         const coincideSolicitud = !fechaSolicitud || fechaSolicitudFila === fechaSolicitud;
         const coincideEntrega = !fechaEntrega || fechaEntregaFila === fechaEntrega;
 
@@ -272,6 +296,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filtroEstado) {
         filtroEstado.addEventListener('change', aplicarFiltrosCompras);
     }
+
+    document.querySelectorAll('.js-progress').forEach((bar) => {
+        const value = Number(bar.dataset.progress || 0);
+        bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+    });
+
+    document.querySelectorAll('.js-delete-request-form').forEach((form) => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = form.dataset.confirmTitle || '¿Confirmar eliminación?';
+            const text = form.dataset.confirmText || 'Esta acción no se puede deshacer.';
+
+            if (window.Swal) {
+                const res = await Swal.fire({
+                    title,
+                    text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#d33',
+                });
+                if (res.isConfirmed) {
+                    form.submit();
+                }
+                return;
+            }
+
+            if (confirm(text)) {
+                form.submit();
+            }
+        });
+    });
 
     aplicarFiltrosCompras();
 });

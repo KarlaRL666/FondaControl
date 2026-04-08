@@ -25,6 +25,11 @@
                     <span class="badge {% if producto.estado %}badge-success{% else %}badge-danger{% endif %}">
                         {{ producto.estado_display }}
                     </span>
+                    {% if producto.stock_actual <= producto.stock_minimo %}
+                    <span class="badge badge-danger">Stock bajo</span>
+                    {% else %}
+                    <span class="badge badge-success">Stock estable</span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -63,6 +68,19 @@
                 </div>
 
                 <div class="detail-item">
+                    <span class="detail-label">Costo unitario estimado</span>
+                    <span class="detail-value">${{ '%.2f'|format(producto.costo_unitario or 0) }}</span>
+                </div>
+
+                <div class="detail-item">
+                    <span class="detail-label">Ganancia estimada</span>
+                    <span class="detail-value">
+                        ${{ '%.2f'|format(producto.ganancia_monto or 0) }}
+                        ({{ '%.1f'|format(producto.ganancia_porcentaje or 0) }}%)
+                    </span>
+                </div>
+
+                <div class="detail-item">
                     <span class="detail-label">Fecha de Creación</span>
                     <span class="detail-value">
                         {{ producto.fecha_creacion.strftime('%d/%m/%Y %H:%M') if producto.fecha_creacion else 'N/A' }}
@@ -80,6 +98,17 @@
             </div>
 
             <div class="button-group">
+                {% if producto.id_receta %}
+                <button type="button" onclick=window.location.href='{{ url_for("recetas.ver", id_receta=producto.id_receta) }}'
+                        class="btn-view crear-btn" title="Ver receta del producto">
+                    <i class="bi bi-journal-text"></i> Ver receta
+                </button>
+                {% else %}
+                <button type="button" onclick=window.location.href='{{ url_for("recetas.crear", id_producto=producto.id_producto) }}'
+                        class="btn-view crear-btn" title="Crear receta del producto">
+                    <i class="bi bi-journal-plus"></i> Crear receta
+                </button>
+                {% endif %}
                 <button type="button" onclick=window.location.href='{{ url_for("productos.editar", id_producto=producto.id_producto) }}'
                         class="btn-edit crear-btn">
                     <i class="bi bi-pencil"></i> Editar
@@ -133,7 +162,7 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #FF9800 0%, #FF7043 100%);
     color: white;
     display: flex;
     align-items: center;

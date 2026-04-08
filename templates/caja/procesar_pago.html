@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+{% block title %}Procesar Pago - Caja{% endblock %}
+{% block content %}
+<style>
+    * {
+        --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .pago-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        animation: fadeInUp 0.5s ease;
+    }
+
+    @media (max-width: 768px) {
+        .pago-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .pago-card {
+        background: #1d1e20;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .pago-card h2 {
+        color: #FFC107;
+        font-size: 18px;
+        margin: 0 0 16px 0;
+        font-weight: 600;
+    }
+
+    .resumen-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #efefef;
+        font-size: 14px;
+    }
+
+    .resumen-item:last-child {
+        border-bottom: none;
+    }
+
+    .resumen-label {
+        color: #c3c3c3;
+    }
+
+    .resumen-valor {
+        font-weight: 600;
+        color: #FFC107;
+    }
+
+    .cliente-nombre {
+        font-size: 16px;
+        font-weight: 600;
+        color: #FF9800;
+        margin: 8px 0;
+    }
+
+    .total-grande {
+        font-size: 28px;
+        font-weight: 700;
+        color: #FFC107;
+        margin: 16px 0;
+        text-align: center;
+        padding: 16px;
+        background: rgba(139, 115, 85, 0.1);
+        border-radius: 8px;
+    }
+
+    .form-group {
+        margin: 18px 0;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #efefef;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-group select,
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #efefef;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: #FF9800;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+    }
+
+    .form-group input::placeholder {
+        color: #c3c3c3;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .tarjeta-campos {
+        display: none;
+        margin: 18px 0;
+        padding: 16px;
+        background: rgba(139, 115, 85, 0.1);
+        border-radius: 8px;
+        border-left: 3px solid #FF9800;
+    }
+
+    .tarjeta-campos.visible {
+        display: block;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn-primary {
+        flex: 1;
+        padding: 12px;
+        background: linear-gradient(135deg, #FF9800, #FFC107);
+        color: #1d1e20;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(255, 152, 0, 0.3);
+    }
+
+    .btn-secondary {
+        flex: 1;
+        padding: 12px;
+        background: rgba(139, 115, 85, 0.2);
+        color: #FFC107;
+        border: 1px solid rgba(139, 115, 85, 0.5);
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(139, 115, 85, 0.3);
+    }
+
+    .info-box {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 16px 0;
+        color: #FFC107;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .info-box strong {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .metodo-pago-label {
+        display: inline-block;
+        padding: 6px 12px;
+        background: rgba(255, 152, 0, 0.2);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+        border-radius: 4px;
+        color: #FF9800;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+</style>
+
+<div class="pago-container">
+    <!-- Resumen del Pedido -->
+    <div class="pago-card">
+        <h2>📋 Resumen del Pedido</h2>
+
+        <div class="resumen-item">
+            <span class="resumen-label">ID Pedido:</span>
+            <span class="resumen-valor">#{{ pedido.id_pedido }}</span>
+        </div>
+
+        <div class="resumen-item">
+            <span class="resumen-label">Cliente:</span>
+            <span class="cliente-nombre">{{ cliente_nombre }}</span>
+        </div>
+
+        <div class="resumen-item">
+            <span class="resumen-label">Artículos:</span>
+            <span class="resumen-valor">{{ pedido.detalles|length }}</span>
+        </div>
+
+        <div class="resumen-item">
+            <span class="resumen-label">Subtotal:</span>
+            <span class="resumen-valor">${{ "%.2f"|format(pedido.total * 0.9) }}</span>
+        </div>
+
+        <div class="resumen-item">
+            <span class="resumen-label">Impuestos (10%):</span>
+            <span class="resumen-valor">${{ "%.2f"|format(pedido.total * 0.1) }}</span>
+        </div>
+
+        <div class="total-grande">${{ "%.2f"|format(pedido.total) }}</div>
+
+        <h2 style="margin-top: 24px;">📦 Detalles</h2>
+        {% for detalle in pedido.detalles %}
+            <div class="resumen-item">
+                <span>
+                    <strong>{{ detalle.producto.nombre }}</strong>
+                    <br>
+                    <small style="color: #c3c3c3;">Qty: {{ detalle.cantidad }}</small>
+                </span>
+                <span class="resumen-valor">${{ "%.2f"|format(detalle.subtotal) }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Formulario de Pago -->
+    <div class="pago-card">
+        <h2>💳 Capturar Pago</h2>
+
+        <form method="POST" id="form-pago" onsubmit="return validarFormulario();">
+            <div class="form-group">
+                <label for="metodo_pago">Método de Pago</label>
+                <select id="metodo_pago" name="metodo_pago" required onchange="mostrarCamposTarjeta();">
+                    <option value="">-- Selecciona método --</option>
+                    <option value="Efectivo">💵 Efectivo</option>
+                    <option value="Transferencia">🏦 Transferencia</option>
+                    <option value="Tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                </select>
+                <div class="info-box">
+                    ℹ️ El método de pago será guardado cuando se entregue el pedido.
+                </div>
+            </div>
+
+            <!-- Campos de Tarjeta (se muestran solo si se selecciona Tarjeta) -->
+            <div id="tarjeta-campos" class="tarjeta-campos">
+                <h3 style="color: #FFC107; margin: 0 0 12px 0; font-size: 14px;">Información de Tarjeta</h3>
+
+                <div class="form-group">
+                    <label for="numero_tarjeta">Número de Tarjeta</label>
+                    <input
+                        type="text"
+                        id="numero_tarjeta"
+                        name="numero_tarjeta"
+                        placeholder="1234 5678 9012 3456"
+                        maxlength="19"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="titular_tarjeta">Nombre del Titular</label>
+                    <input
+                        type="text"
+                        id="titular_tarjeta"
+                        name="titular_tarjeta"
+                        placeholder="Juan García"
+                    >
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="vencimiento_tarjeta">Vencimiento</label>
+                        <input
+                            type="text"
+                            id="vencimiento_tarjeta"
+                            name="vencimiento_tarjeta"
+                            placeholder="MM/AA"
+                            maxlength="5"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv_tarjeta">CVV</label>
+                        <input
+                            type="text"
+                            id="cvv_tarjeta"
+                            name="cvv_tarjeta"
+                            placeholder="123"
+                            maxlength="4"
+                        >
+                    </div>
+                </div>
+
+                <div class="info-box" style="background: rgba(255, 193, 7, 0.05);">
+                    ⚠️ Los datos de tarjeta son validados pero no almacenados de forma segura en este sistema.
+                    Para producción, integra con un procesador de pagos certificado.
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">✓ Confirmar Pago</button>
+                <a href="{{ url_for('caja.pedidos_completados') }}" class="btn-secondary">← Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function mostrarCamposTarjeta() {
+        const select = document.getElementById('metodo_pago');
+        const campos = document.getElementById('tarjeta-campos');
+
+        if (select.value === 'Tarjeta') {
+            campos.classList.add('visible');
+            document.getElementById('numero_tarjeta').required = true;
+            document.getElementById('titular_tarjeta').required = true;
+            document.getElementById('vencimiento_tarjeta').required = true;
+            document.getElementById('cvv_tarjeta').required = true;
+        } else {
+            campos.classList.remove('visible');
+            document.getElementById('numero_tarjeta').required = false;
+            document.getElementById('titular_tarjeta').required = false;
+            document.getElementById('vencimiento_tarjeta').required = false;
+            document.getElementById('cvv_tarjeta').required = false;
+        }
+    }
+
+    function validarFormulario() {
+        const metodo = document.getElementById('metodo_pago').value;
+
+        if (!metodo) {
+            Swal.fire('Error', 'Debes seleccionar un método de pago', 'error');
+            return false;
+        }
+
+        if (metodo === 'Tarjeta') {
+            const numero = document.getElementById('numero_tarjeta').value.trim();
+            const titular = document.getElementById('titular_tarjeta').value.trim();
+            const vencimiento = document.getElementById('vencimiento_tarjeta').value.trim();
+            const cvv = document.getElementById('cvv_tarjeta').value.trim();
+
+            if (!numero || !/^\d{13,19}/.test(numero.replace(/\s/g, ''))) {
+                Swal.fire('Error', 'Número de tarjeta inválido (13-19 dígitos)', 'error');
+                return false;
+            }
+
+            if (!titular || titular.length < 3) {
+                Swal.fire('Error', 'Nombre del titular debe tener al menos 3 caracteres', 'error');
+                return false;
+            }
+
+            if (!vencimiento || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(vencimiento)) {
+                Swal.fire('Error', 'Vencimiento inválido (formato MM/AA)', 'error');
+                return false;
+            }
+
+            if (!cvv || !/^\d{3,4}$/.test(cvv)) {
+                Swal.fire('Error', 'CVV debe tener 3 o 4 dígitos', 'error');
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Auto-format tarjeta número
+    document.getElementById('numero_tarjeta')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\s/g, '');
+        let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
+        e.target.value = formatted;
+    });
+
+    // Auto-format vencimiento
+    document.getElementById('vencimiento_tarjeta')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4);
+        }
+        e.target.value = value;
+    });
+
+    // Only numbers for CVV
+    document.getElementById('cvv_tarjeta')?.addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/\D/g, '');
+    });
+</script>
+{% endblock %}

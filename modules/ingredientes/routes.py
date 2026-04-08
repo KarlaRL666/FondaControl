@@ -46,7 +46,7 @@ def crear():
     form = RegistrarIngredienteForm()
 
     # cargar proveedor y categorías dependientes del proveedor seleccionado
-    form.id_proveedor.choices = [(p.id_proveedor, p.persona.nombre) for p in Proveedor.query.all()]
+    form.id_proveedor.choices = [(0, 'Selecciona un proveedor')] + [(p.id_proveedor, p.persona.nombre) for p in Proveedor.query.all()]
 
     proveedor_id = request.values.get('id_proveedor', type=int)
     form.id_categoria_ingrediente.choices = []
@@ -89,13 +89,14 @@ def editar(id):
     form.id_categoria_ingrediente.choices = [
         (c.id_categoria_ingrediente, c.nombre) for c in CategoriaIngrediente.query.order_by(CategoriaIngrediente.nombre.asc()).all()
     ]
-    form.id_proveedor.choices = [(p.id_proveedor, p.persona.nombre) for p in Proveedor.query.all()]
+    form.id_proveedor.choices = [(0, 'Selecciona un proveedor')] + [(p.id_proveedor, p.persona.nombre) for p in Proveedor.query.all()]
 
     if request.method == 'GET':
         form.nombre.data = ingrediente.get('nombre')
         form.unidad_medida.data = ingrediente.get('unidad_medida')
         form.stock_actual.data = ingrediente.get('stock_actual')
         form.stock_minimo.data = ingrediente.get('stock_minimo')
+        form.precio.data = ingrediente.get('precio')
         form.porcentaje_merma.data = ingrediente.get('porcentaje_merma')
         form.factor_conversion.data = ingrediente.get('factor_conversion')
         form.id_categoria_ingrediente.data = ingrediente.get('id_categoria_ingrediente')

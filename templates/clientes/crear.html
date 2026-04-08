@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Crear Cliente{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+{% endblock %}
+{% block content %}
+<div class="users-form-page">
+    <section class="users-form-hero">
+        <div>
+            <span class="users-eyebrow">Nuevo cliente</span>
+            <h1>Crear cliente</h1>
+            <p>Registra una nueva cuenta de cliente con sus datos personales y acceso al sistema.</p>
+        </div>
+        <div class="users-form-hero-card">
+            <article><span>Acción</span><strong>Alta</strong></article>
+            <article><span>Estado</span><strong>Activo al guardar</strong></article>
+        </div>
+    </section>
+
+    <div class="users-form-shell">
+        <form method="POST" novalidate class="users-form-card">
+            {{ form.hidden_tag() }}
+            <section class="users-form-section">
+                <h3 class="section-title"><i class="bi bi-person-fill"></i> Datos personales</h3>
+                <div class="form-grid users-form-grid">
+                    <div class="form-group-half">{{ form.nombre.label(class="form-label") }}{{ form.nombre(class="form-control") }}{% for error in form.nombre.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                    <div class="form-group-half">{{ form.apellido_p.label(class="form-label") }}{{ form.apellido_p(class="form-control") }}{% for error in form.apellido_p.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                    <div class="form-group-half">{{ form.apellido_m.label(class="form-label") }}{{ form.apellido_m(class="form-control") }}{% for error in form.apellido_m.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                    <div class="form-group-full">{{ form.direccion.label(class="form-label") }}{{ form.direccion(class="form-control") }}{% for error in form.direccion.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                </div>
+            </section>
+
+            <section class="users-form-section">
+                <h3 class="section-title"><i class="bi bi-telephone-fill"></i> Contacto</h3>
+                <div class="form-grid users-form-grid">
+                    <div class="form-group-half">{{ form.telefono.label(class="form-label") }}{{ form.telefono(class="form-control") }}{% for error in form.telefono.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                    <div class="form-group-half">{{ form.correo.label(class="form-label") }}{{ form.correo(class="form-control") }}{% for error in form.correo.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                </div>
+            </section>
+
+            <section class="users-form-section">
+                <h3 class="section-title"><i class="bi bi-shield-lock-fill"></i> Acceso</h3>
+                <div class="form-grid users-form-grid">
+                    <div class="form-group-half">{{ form.username.label(class="form-label") }}{{ form.username(class="form-control") }}{% for error in form.username.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                    <div class="form-group-half">{{ form.contrasena.label(class="form-label") }}{{ form.contrasena(class="form-control") }}{% for error in form.contrasena.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                    <div class="form-group-half">{{ form.confirmar_contrasena.label(class="form-label") }}{{ form.confirmar_contrasena(class="form-control") }}{% for error in form.confirmar_contrasena.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                </div>
+            </section>
+
+            <div class="users-form-actions">
+                {{ form.submit(class="crear-btn") }}
+                <a href="{{ url_for('clientes.index') }}" class="btn volver-btn">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

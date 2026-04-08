@@ -1,17 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Detalle Ingrediente{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/ingredientes_forms.css') }}">
+{% endblock %}
+
 {% block content %}
-<h1>Detalle de Ingrediente</h1>
-<div class="card" style="margin-top:20px;">
-    <h3>{{ ingrediente.nombre }}</h3>
-    <p><strong>Unidad:</strong> {{ ingrediente.unidad_medida }}</p>
-    <p><strong>Stock actual:</strong> {{ ingrediente.stock_actual }}</p>
-    <p><strong>Stock mínimo:</strong> {{ ingrediente.stock_minimo }}</p>
-    <p><strong>Merma:</strong> {{ ingrediente.porcentaje_merma }}%</p>
-    <p><strong>Factor conversión:</strong> {{ ingrediente.factor_conversion }}</p>
-    <p><strong>Categoría:</strong> {{ ingrediente.categoria_ingrediente.nombre if ingrediente.categoria_ingrediente else 'N/A' }}</p>
-    <p><strong>Proveedor:</strong> {{ ingrediente.proveedor.persona.nombre if ingrediente.proveedor and ingrediente.proveedor.persona else 'N/A' }}</p>
-    <a href="{{ url_for('ingredientes.index') }}" class="btn-secondary">Volver</a>
+<div class="ingredient-detail-page">
+    <section class="ingredient-detail-hero">
+        <div>
+            <p class="ingredient-kicker">Ficha tecnica</p>
+            <h1>{{ ingrediente.nombre }}</h1>
+            <p class="ingredient-detail-subtitle">Informacion completa para control de inventario y produccion.</p>
+        </div>
+        <div class="ingredient-hero-badges">
+            <span class="stock-state-badge {{ 'low' if ingrediente.stock_actual < ingrediente.stock_minimo else 'ok' }}">
+                {{ 'Stock bajo' if ingrediente.stock_actual < ingrediente.stock_minimo else 'Stock estable' }}
+            </span>
+        </div>
+        <a href="{{ url_for('ingredientes.index') }}" class="btn btn-secondary">Volver</a>
+    </section>
+
+    <section class="ingredient-detail-grid">
+        <article class="ingredient-detail-card">
+            <h3>Inventario</h3>
+            <p><strong>Unidad:</strong> {{ ingrediente.unidad_medida }}</p>
+            <p><strong>Stock actual:</strong> {{ ingrediente.stock_actual }}</p>
+            <p><strong>Stock minimo:</strong> {{ ingrediente.stock_minimo }}</p>
+        </article>
+
+        <article class="ingredient-detail-card">
+            <h3>Parametros</h3>
+            <p><strong>% Merma:</strong> {{ ingrediente.porcentaje_merma }}</p>
+            <p><strong>Factor de conversion:</strong> {{ ingrediente.factor_conversion }}</p>
+            <p><strong>Categoria:</strong> {{ ingrediente.categoria_ingrediente.nombre if ingrediente.categoria_ingrediente else 'N/A' }}</p>
+            <p><strong>Proveedor:</strong> {{ ingrediente.proveedor.persona.nombre if ingrediente.proveedor and ingrediente.proveedor.persona else 'N/A' }}</p>
+        </article>
+    </section>
 </div>
 {% endblock %}

@@ -1,13 +1,55 @@
 {% extends "base.html" %}
 {% block title %}Nueva Solicitud de Compra{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/compras.css') }}">
+<style>
+    .crear-compra-hero {
+        background: linear-gradient(120deg, #111827 0%, #0f766e 55%, #14b8a6 100%);
+        color: #fff;
+        border-radius: 18px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+    }
+
+    .crear-compra-shell {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 1rem;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+    }
+
+    .crear-compra-info {
+        background: #f8fafc;
+        border: 1px solid #dbe4ee;
+        border-radius: 12px;
+        padding: 0.9rem;
+        margin-bottom: 0.9rem;
+    }
+
+    #tablaSolicitudesCompra .form-control,
+    #tablaSolicitudesCompra .form-select {
+        border-radius: 10px;
+        border: 1px solid #dbe4ee;
+        min-height: 40px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1 class="section-title">Nueva Solicitud de Compra</h1>
+<div class="crear-compra-hero">
+    <p class="hero-kicker mb-1">Abasto y proveedores</p>
+    <h1 class="section-title text-white mb-1">Nueva Solicitud de Compra</h1>
+    <p class="mb-0" style="opacity:0.9;">Arma una solicitud clara por materia prima y proveedor con captura rápida.</p>
+</div>
 
 <form method="POST" id="formSolicitudCompra">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <div class="card mb-4">
+    <div class="crear-compra-shell">
+    <div class="crear-compra-info">
         <p class="mb-2"><strong>Agrega una o varias materias primas</strong></p>
         <p class="text-muted mb-0">Puedes combinar varias materias en una sola solicitud. Si eliges distintos proveedores, se crearán solicitudes agrupadas por proveedor.</p>
         {% if id_materia_alerta %}
@@ -67,6 +109,7 @@
         <button type="button" class="btn btn-outline-primary" id="btnAgregarSugeridas">Agregar sugeridas</button>
         <button type="submit" class="btn btn-success">Guardar solicitud</button>
         <a href="{{ url_for('produccion.index') if current_user.id_rol == 2 else url_for('compras.index') }}" class="btn btn-secondary">Volver</a>
+    </div>
     </div>
 </form>
 

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Pedidos Completados - Caja{% endblock %}
+{% block content %}
+<style>
+    * {
+        --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .caja-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding: 0 16px 32px 16px;
+        animation: fadeInUp 0.5s ease;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .caja-hero {
+        background: linear-gradient(135deg, #6B5344 0%, #8B7355 55%, #FF9800 100%);
+        color: #fff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 16px 40px rgba(23, 50, 77, 0.25);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .caja-hero::before {
+        content: '';
+        position: absolute;
+        right: -100px;
+        top: -100px;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+    }
+
+    .caja-hero h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .caja-hero .badge {
+        background: rgba(255, 255, 255, 0.25);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+    }
+
+    .pedidos-tabla {
+        background: #1d1e20;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .pedidos-tabla table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .pedidos-tabla thead {
+        background: rgba(139, 115, 85, 0.2);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .pedidos-tabla th {
+        padding: 16px;
+        text-align: left;
+        color: #FFC107;
+        font-weight: 600;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .pedidos-tabla tbody tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: background-color 0.2s ease;
+    }
+
+    .pedidos-tabla tbody tr:hover {
+        background-color: rgba(139, 115, 85, 0.1);
+    }
+
+    .pedidos-tabla td {
+        padding: 14px 16px;
+        color: #efefef;
+        font-size: 14px;
+    }
+
+    .pedido-id {
+        font-weight: 600;
+        color: #FFC107;
+        font-size: 15px;
+    }
+
+    .pedido-cliente {
+        color: #c3c3c3;
+    }
+
+    .pedido-total {
+        font-weight: 600;
+        color: #FF9800;
+        font-size: 15px;
+    }
+
+    .btn-procesar {
+        background: linear-gradient(135deg, #FF9800, #FFC107);
+        color: #1d1e20;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-procesar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: #c3c3c3;
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.6;
+    }
+
+    .empty-state h3 {
+        color: #efefef;
+        margin: 16px 0 8px 0;
+        font-size: 18px;
+    }
+
+    .btn-volver {
+        display: inline-block;
+        margin-top: 12px;
+        background: rgba(139, 115, 85, 0.3);
+        color: #FFC107;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(139, 115, 85, 0.5);
+    }
+
+    .btn-volver:hover {
+        background: rgba(139, 115, 85, 0.5);
+    }
+</style>
+
+<div class="caja-shell">
+    <div class="caja-hero">
+        <div>
+            <h1>💳 Procesar Pagos</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">Pendientes completables o con producción terminada</p>
+        </div>
+        <div class="badge">{{ pedidos|length }} pedidos</div>
+    </div>
+
+    {% if pedidos %}
+        <div class="pedidos-tabla">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Pedido</th>
+                        <th>Cliente</th>
+                        <th>Items</th>
+                        <th>Estado</th>
+                        <th>Pago</th>
+                        <th>Total</th>
+                        <th>Fecha</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pedidos %}
+                        <tr>
+                            <td><span class="pedido-id">#{{ p.id_pedido }}</span></td>
+                            <td><span class="pedido-cliente">{{ p.cliente }}</span></td>
+                            <td>{{ p.num_items }} artículos</td>
+                            <td>{{ p.estado }}</td>
+                            <td><span class="badge bg-warning text-dark">{{ p.estado_pago }}</span></td>
+                            <td><span class="pedido-total">${{ "%.2f"|format(p.total) }}</span></td>
+                            <td>{{ p.fecha.strftime('%d/%m %H:%M') }}</td>
+                            <td>
+                                <a href="{{ url_for('caja.procesar_pago_pedido', id_pedido=p.id_pedido) }}" class="btn-procesar">
+                                    Procesar Pago
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state pedidos-tabla">
+            <div class="empty-state-icon">📭</div>
+            <h3>No hay pedidos para procesar</h3>
+            <p>Todos los pedidos completados ya tienen pago registrado.</p>
+            <a href="{{ url_for('caja.index') }}" class="btn-volver">Volver a Caja</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

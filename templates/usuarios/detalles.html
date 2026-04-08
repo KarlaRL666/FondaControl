@@ -6,93 +6,45 @@
 {% endblock %}
 
 {% block content %}
-<div class="user-container">
-
-    <div class="user-card">
-
-        <!-- Header -->
-        <div class="user-header">
-            <div class="user-header-content">
-                <div class="avatar">
-                    {{ (usuario.nombre[0] if usuario.nombre else 'U') | upper }}
-                </div>
-
-                <div class="user-info">
-                    <h1>
-                        {{ usuario.nombre }} {{ usuario.apellido_paterno or '' }} {{ usuario.apellido_materno or '' }}
-                    </h1>
-                    <p>@{{ usuario.username }}</p>
-                </div>
+<section class="account-page mt-3">
+    <header class="account-hero compact">
+        <div class="d-flex align-items-center gap-3">
+            <div class="account-avatar">{{ (usuario.nombre[0] if usuario.nombre else 'U') | upper }}</div>
+            <div>
+                <p class="account-kicker mb-1">Detalle de usuario</p>
+                <div class="account-name">{{ usuario.nombre }} {{ usuario.apellido_paterno or '' }} {{ usuario.apellido_materno or '' }}</div>
+                <div class="account-user">@{{ usuario.username }}</div>
             </div>
         </div>
+        <span class="account-status {{ 'status-on' if usuario.estado else 'status-off' }}">{{ 'Activo' if usuario.estado else 'Inactivo' }}</span>
+    </header>
 
-        <!-- Info -->
-        <div class="user-body">
-
-            <!-- Rol -->
-            <div class="user-item">
-                <div class="icon purple">
-                    <i class="bi bi-person-badge"></i>
-                </div>
-                <div>
-                    <span>ROL</span>
-                    <p>{{ usuario.rol_nombre or 'Sin rol' }}</p>
-                </div>
-            </div>
-
-            <!-- Estado -->
-            <div class="user-item">
-                <div class="icon green">
-                    <i class="bi bi-circle-fill"></i>
-                </div>
-                <div>
-                    <span>ESTADO</span>
-                    <p class="{{ 'activo' if usuario.estado else 'inactivo' }}">
-                        <span class="dot"></span>
-                        {{ 'Activo' if usuario.estado else 'Inactivo' }}
-                    </p>
-                </div>
-            </div>
-
-            <!-- Correo -->
-            <div class="user-item">
-                <div class="icon blue">
-                    <i class="bi bi-envelope"></i>
-                </div>
-                <div>
-                    <span>CORREO</span>
-                    <p>{{ usuario.correo or 'No disponible' }}</p>
-                </div>
-            </div>
-
-            <!-- Teléfono -->
-            <div class="user-item">
-                <div class="icon yellow">
-                    <i class="bi bi-telephone"></i>
-                </div>
-                <div>
-                    <span>TELÉFONO</span>
-                    <p>{{ usuario.telefono or 'No disponible' }}</p>
-                </div>
-            </div>
-
-            <!-- Dirección -->
-            <div class="user-item">
-                <div class="icon gray">
-                    <i class="bi bi-geo-alt"></i>
-                </div>
-                <div>
-                    <span>DIRECCIÓN</span>
-                    <p>{{ usuario.direccion or 'No disponible' }}</p>
-                </div>
-            </div>
-            <a href="{{ url_for('usuarios.index') }}" class="btn volver-btn">
-                Volver
-            </a>
-
-
+    <div class="account-grid">
+        <article class="account-info-card">
+            <span class="account-info-label"><i class="bi bi-person-badge"></i> Rol</span>
+            <div class="account-info-value">{{ usuario.rol_nombre or 'Sin rol' }}</div>
+        </article>
+        <article class="account-info-card">
+            <span class="account-info-label"><i class="bi bi-envelope"></i> Correo</span>
+            <div class="account-info-value">{{ usuario.correo or 'No disponible' }}</div>
+        </article>
+        <article class="account-info-card">
+            <span class="account-info-label"><i class="bi bi-telephone"></i> Teléfono</span>
+            <div class="account-info-value">{{ usuario.telefono or 'No disponible' }}</div>
+        </article>
+        <article class="account-info-card">
+            <span class="account-info-label"><i class="bi bi-geo-alt"></i> Dirección</span>
+            <div class="account-info-value">{{ usuario.direccion or 'No disponible' }}</div>
+        </article>
     </div>
-</div>
+
+    <div class="account-actions">
+        <a href="{{ url_for('usuarios.editar', id_usuario=usuario.id_usuario) }}" class="btn btn-primary">
+            <i class="bi bi-pencil-square"></i> Editar
+        </a>
+        <a href="{{ url_for('usuarios.index') }}" class="btn btn-secondary">Volver</a>
+    </div>
+</section>
 {% endblock %}
 
 {% block scripts %}

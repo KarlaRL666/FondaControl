@@ -7,9 +7,26 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+<style>
+    .profile-shell { max-width: 920px; margin: 0 auto; }
+    .profile-hero {
+        background: linear-gradient(135deg, #6B5344 0%, #8B7355 55%, #FF9800 100%);
+        color: #fff;
+        border-radius: 16px;
+        padding: 1.2rem 1.35rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 14px 28px rgba(20, 53, 86, 0.22);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
+<div class="profile-shell mt-3">
+    <section class="profile-hero">
+        <h1 class="h3 mb-1">Mi perfil</h1>
+        <p class="mb-0">Consulta tu información personal y estado de cuenta.</p>
+    </section>
+
 <div class="user-container">
 
     <div class="user-card">
@@ -104,6 +121,7 @@
             </div>
 
     </div>
+</div>
 </div>
 {% endblock %}
 

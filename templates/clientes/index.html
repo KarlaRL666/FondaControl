@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="users-page">
+    <section class="users-hero">
+        <div>
+            <span class="users-eyebrow">Administración de clientes</span>
+            <h1>Gestión de clientes</h1>
+            <p>Consulta, crea y administra clientes del sistema desde una vista separada de empleados.</p>
+        </div>
+
+        <div class="users-hero-stats">
+            <article><span>Total</span><strong>{{ total }}</strong></article>
+            <article><span>Activos</span><strong>{{ activos }}</strong></article>
+            <article><span>Inactivos</span><strong>{{ inactivos }}</strong></article>
+        </div>
+    </section>
+
+    <div class="button-group users-actions-bar">
+        <a href="{{ url_for('clientes.crear') }}" class="crear-btn">Nuevo cliente</a>
+        <a href="{{ url_for('dashboard.index') }}" class="volver-btn">Volver</a>
+    </div>
+
+    <div class="toolbar users-toolbar">
+        <input type="text" id="searchInput" placeholder="Buscar por nombre, usuario, correo o teléfono">
+        <select id="statusFilter">
+            <option value="all">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+        </select>
+    </div>
+
+    <section class="users-table-card">
+        <table class="userTable data-table" id="clientTable">
+            <thead>
+                <tr>
+                    <th>Nombre completo</th>
+                    <th>Usuario</th>
+                    <th>Pedidos</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if clientes %}
+                    {% for cliente in clientes %}
+                    <tr class="client-row" data-nombre="{{ cliente.nombre_completo }} {{ cliente.username }} {{ cliente.correo }} {{ cliente.telefono }}" data-estado="{% if cliente.estado_bool %}active{% else %}inactive{% endif %}">
+                        <td>
+                            <div class="user-person">
+                                <div class="user-avatar">{{ (cliente.nombre[0] if cliente.nombre else 'C') | upper }}</div>
+                                <div class="user-copy">
+                                    <strong>{{ cliente.nombre_completo }}</strong>
+                                    <span>{{ cliente.correo or 'Sin correo registrado' }}</span>
+                                    <small>{{ cliente.telefono or 'Sin teléfono registrado' }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-pill role-cliente">@{{ cliente.username }}</span></td>
+                        <td><span class="status-pill is-active"><span class="status-dot"></span>{{ cliente.total_pedidos }} pedidos</span></td>
+                        <td><span class="status-pill {{ 'is-active' if cliente.estado_bool else 'is-inactive' }}"><span class="status-dot"></span>{{ cliente.estado_display }}</span></td>
+                        <td>
+                            <div class="users-row-actions">
+                                <a href="{{ url_for('clientes.ver', id_cliente=cliente.id_cliente) }}" class="action-btn view-btn" title="Ver"><i class="bi bi-eye"></i></a>
+                                <a href="{{ url_for('clientes.editar', id_cliente=cliente.id_cliente) }}" class="action-btn edit-btn" title="Editar"><i class="bi bi-pencil"></i></a>
+                                {% if cliente.estado_bool %}
+                                <form method="POST" action="{{ url_for('clientes.eliminar', id_cliente=cliente.id_cliente) }}" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="action-btn danger-btn" title="Desactivar"><i class="bi bi-trash"></i></button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('clientes.activar', id_cliente=cliente.id_cliente) }}" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="action-btn success-btn" title="Activar"><i class="bi bi-check-circle"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="bi bi-people"></i>
+                                <p>No hay clientes registrados</p>
+                                <a href="{{ url_for('clientes.crear') }}" class="crear-btn">Crear primer cliente</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </section>
+
+    <div class="users-footer">
+        <div class="text-gray-500 dark:text-gray-400">
+            Mostrando <span id="showingStart">1</span> - <span id="showingEnd">{{ total }}</span> de <span id="totalCount">{{ total }}</span> clientes
+        </div>
+        <div class="flex gap-2" id="pagination"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pages/clientes.js') }}"></script>
+{% endblock %}

@@ -1,24 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Crear Ingrediente{% endblock %}
+{% import '_macros.html' as macros %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/ingredientes_forms.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="form-page">
-    <div class="form-container">
-        <div class="form-title">
+    <div class="form-container ingredient-form-shell">
+        <div class="form-title ingredient-form-title">
+            <span class="ingredient-kicker">Nuevo registro</span>
             <h1>Registrar Ingrediente</h1>
+            <p>Define inventario, costo y parámetros de merma/conversion para un control más preciso.</p>
         </div>
 
         <form method="POST" novalidate>
             {{ form.hidden_tag() }}
+
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-basket2-fill"></i> Datos del Ingrediente
+                </h3>
+                <div class="form-grid">
+                    {{ macros.render_form_field(form.nombre, placeholder='Ej: Harina de trigo') }}
+                    {{ macros.render_form_field(form.unidad_medida, input_class='form-select') }}
+                    {{ macros.render_form_field(form.id_proveedor, input_class='form-select') }}
+                    {{ macros.render_form_field(form.id_categoria_ingrediente, input_class='form-select') }}
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-graph-up-arrow"></i> Inventario y Costos
+                </h3>
+                <div class="form-grid">
+                    {{ macros.render_form_field(form.stock_actual, placeholder='Ej: 10.00') }}
+                    {{ macros.render_form_field(form.stock_minimo, placeholder='Ej: 2.5') }}
+                    {{ macros.render_form_field(form.precio, placeholder='Ej: 120.00') }}
+                    {{ macros.render_form_field(form.porcentaje_merma, placeholder='Ej: 10%') }}
+                    {{ macros.render_form_field(form.factor_conversion, placeholder='Ej: 1000') }}
+                </div>
+            </div>
+
             <div class="form-grid">
-                <div class="form-group-half">{{ form.nombre.label(class="form-label") }}{{ form.nombre(class="form-control") }}{% for error in form.nombre.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
-                <div class="form-group-half">{{ form.unidad_medida.label(class="form-label") }}{{ form.unidad_medida(class="form-control") }}{% for error in form.unidad_medida.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
-                <div class="form-group-half">{{ form.stock_minimo.label(class="form-label") }}{{ form.stock_minimo(class="form-control") }}{% for error in form.stock_minimo.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
-                <div class="form-group-half">{{ form.precio.label(class="form-label") }}{{ form.precio(class="form-control") }}{% for error in form.precio.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
-                <div class="form-group-half">{{ form.porcentaje_merma.label(class="form-label") }}{{ form.porcentaje_merma(class="form-control") }}{% for error in form.porcentaje_merma.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
-                <div class="form-group-half">{{ form.factor_conversion.label(class="form-label") }}{{ form.factor_conversion(class="form-control") }}{% for error in form.factor_conversion.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
-                <div class="form-group-half">{{ form.id_categoria_ingrediente.label(class="form-label") }}{{ form.id_categoria_ingrediente(class="form-control", id="id_categoria_ingrediente") }}{% for error in form.id_categoria_ingrediente.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
-                <div class="form-group-half">{{ form.id_proveedor.label(class="form-label") }}{{ form.id_proveedor(class="form-control") }}{% for error in form.id_proveedor.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>
+                <div class="form-group-full ingredient-help-card">
+                    <div class="ingredient-help-head">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>Como usar merma y factor de conversion</strong>
+                    </div>
+                    <p>
+                        La <strong>merma</strong> es el porcentaje de perdida esperado del ingrediente durante su manejo o preparacion.
+                        Ejemplo: si capturas 10%, el sistema puede considerar que de cada 100 unidades, 10 se pierden.
+                    </p>
+                    <p>
+                        El <strong>factor de conversion</strong> indica cuantas unidades pequeñas equivalen a 1 unidad principal.
+                        Ejemplo: si compras en kilogramos pero trabajas en gramos, escribe 1000 porque 1 kg = 1000 g.
+                    </p>
+                </div>
             </div>
             <div class="button-group">
                 {{ form.submit(class="crear-btn") }}
@@ -48,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resetCategorias();
 
     proveedorSelect.addEventListener('change', async function() {
-        if (!this.value) {
+        if (!this.value || Number(this.value) <= 0) {
             resetCategorias();
             return;
         }

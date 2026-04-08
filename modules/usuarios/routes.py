@@ -126,16 +126,16 @@ def editar():
         form.direccion.data = usuario.get('direccion')
         form.username.data = usuario.get('username')
         form.rol.data = usuario.get('rol_nombre')
-    
-    if request.method == 'POST' and form.validate_on_submit():
-            exito, error = actualizar_usuario(id_usuario, request.form)
 
-            if exito:
-                current_app.logger.info(f"Usuario actualizado: {form.username.data}")   
-                flash('Usuario actualizado correctamente', 'success')
-                return redirect(url_for('usuarios.index'))
-            else:
-                current_app.logger.error(f"Error al actualizar usuario: {str(error)}")
-                flash(error, 'danger')
+    if request.method == 'POST' and form.validate_on_submit():
+        exito, error = actualizar_usuario(id_usuario, form)
+
+        if exito:
+            current_app.logger.info(f"Usuario actualizado: {form.username.data}")
+            flash('Usuario actualizado correctamente', 'success')
+            return redirect(url_for('usuarios.index'))
+
+        current_app.logger.error(f"Error al actualizar usuario: {str(error)}")
+        flash(error, 'danger')
     
     return render_template('usuarios/editar.html', form=form, usuario=usuario)

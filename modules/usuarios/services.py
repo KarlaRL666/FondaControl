@@ -5,6 +5,17 @@ from flask import current_app
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _leer_valor(form_like, field_name):
+    campo = getattr(form_like, field_name, None)
+    if campo is not None and hasattr(campo, 'data'):
+        return campo.data
+    if hasattr(form_like, 'get'):
+        return form_like.get(field_name)
+    return None
+
+
 def crear_usuario(form):
     try:
         password_hash = generate_password_hash(form.contrasena.data)
@@ -159,9 +170,10 @@ def obtener_usuario(id_usuario):
     
 def actualizar_usuario(id_usuario, form):
     try:
-        password_hash = generate_password_hash(form.get('contrasena')) if form.get('contrasena') else None
+        contrasena = _leer_valor(form, 'contrasena')
+        password_hash = generate_password_hash(contrasena) if contrasena else None
 
-        rol = Rol.query.filter_by(nombre=form.get('rol')).first()
+        rol = Rol.query.filter_by(nombre=_leer_valor(form, 'rol')).first()
         if not rol:
             return False, "Rol no encontrado"
 
@@ -173,19 +185,19 @@ def actualizar_usuario(id_usuario, form):
             )   
         """), {
             "id_usuario": id_usuario,
-            "nombre": form.get('nombre'),
-            "ap_p": form.get('apellido_p'),
-            "ap_m": form.get('apellido_m'),
-            "telefono": form.get('telefono') or None,
-            "correo": form.get('correo') or None,
-            "direccion": form.get('direccion') or None,
-            "username": form.get('username'),
+            "nombre": _leer_valor(form, 'nombre'),
+            "ap_p": _leer_valor(form, 'apellido_p'),
+            "ap_m": _leer_valor(form, 'apellido_m'),
+            "telefono": _leer_valor(form, 'telefono') or None,
+            "correo": _leer_valor(form, 'correo') or None,
+            "direccion": _leer_valor(form, 'direccion') or None,
+            "username": _leer_valor(form, 'username'),
             "password": password_hash,
             "id_rol": rol.id_rol
         })
 
         db.session.commit()
-        logger.info(f"Usuario actualizado: {form.get('username')}")
+        logger.info(f"Usuario actualizado: {_leer_valor(form, 'username')}")
         return True, "Usuario actualizado"
 
     except Exception as e:

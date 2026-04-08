@@ -1,115 +1,81 @@
 {% extends "base.html" %}
 {% block title %}Editar Proveedor{% endblock %}
+{% import '_macros.html' as macros %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/proveedores.css') }}">
+{% endblock %}
 
 {% block content %}
-<div class="form-page">
-    <div class="form-container">
-        <div class="form-title">
-        <h1>Editar Proveedor</h1>
+<section class="providers-form-page">
+    <header class="providers-form-hero">
+        <div>
+            <span class="providers-eyebrow"><i class="bi bi-pencil-square"></i> Edición</span>
+            <h1>Editar proveedor</h1>
+            <p>Actualiza datos operativos y mantén su información al día.</p>
+        </div>
+        <div class="providers-form-hero-card">
+            <article>
+                <span>Estado</span>
+                <strong>Actualizable</strong>
+            </article>
+            <article>
+                <span>Categoría</span>
+                <strong>Asignable</strong>
+            </article>
     </div>
+    </header>
+
+    <div class="providers-form-shell">
+        <div class="providers-form-card">
         <form method="POST" novalidate>
             {{ form.hidden_tag() }}
 
-            <div class="form-section">
-                <h3 class="section-title">
+            <div class="providers-form-section">
+                <h3 class="account-section-title">
                     <i class="bi bi-person-fill"></i> Datos Personales
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.nombre.label(class="form-label") }}
-                        {{ form.nombre(class="form-control") }}
-                        {% for error in form.nombre.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.apellido_p.label(class="form-label") }}
-                        {{ form.apellido_p(class="form-control") }}
-                        {% for error in form.apellido_p.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.apellido_m.label(class="form-label") }}   <!-- Corregido: apellido_m en vez de repetir apellido_p -->
-                        {{ form.apellido_m(class="form-control") }}
-                        {% for error in form.apellido_m.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-full">
-                        {{ form.direccion.label(class="form-label") }}
-                        {{ form.direccion(class="form-control") }}
-                        {% for error in form.direccion.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.nombre, placeholder='Ej: Ana', tooltip='Nombre completo del proveedor') }}
+                    {{ macros.render_form_field(form.apellido_p, placeholder='Ej: García', tooltip='Apellido paterno') }}
+                    {{ macros.render_form_field(form.apellido_m, placeholder='Ej: Sánchez', tooltip='Apellido materno si aplica') }}
+                    {{ macros.render_form_field(form.direccion, 'form-group-full', 'Ej: Av. Reforma 123', tooltip='Dirección completa del proveedor') }}
                 </div>
             </div>
 
-            <div class="form-section">
-                <h3 class="section-title">
+            <div class="providers-form-section">
+                <h3 class="account-section-title">
                     <i class="bi bi-telephone-fill"></i> Información de Contacto
                 </h3>
                 <div class="form-grid">
-                    <div class="form-group-half">
-                        {{ form.telefono.label(class="form-label") }}
-                        {{ form.telefono(class="form-control") }}
-                        {% for error in form.telefono.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.correo.label(class="form-label") }}
-                        {{ form.correo(class="form-control") }}
-                        {% for error in form.correo.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div class="form-group-half">
-                        {{ form.id_categoria_proveedor.label(class="form-label") }}
-                        {{ form.id_categoria_proveedor(class="form-control") }}
-                        {% for error in form.id_categoria_proveedor.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.telefono, placeholder='Ej: 5512345678', tooltip='10 dígitos sin espacios ni guiones') }}
+                    {{ macros.render_form_field(form.correo, placeholder='Ej: proveedor@correo.com', tooltip='Correo válido para contacto') }}
+                    {{ macros.render_form_field(form.id_categoria_proveedor, input_class='form-select', tooltip='Selecciona una categoría existente o crea una nueva') }}
 
                     <div class="form-group-full">
-                        <label class="form-label" style="display:flex;align-items:center;gap:8px;">
-                            {{ form.usar_categoria_nueva() }}
-                            Crear nueva categoría personalizada
-                        </label>
+                        {{ macros.render_checkbox_field(form.usar_categoria_nueva, 'Crear nueva categoría personalizada') }}
                     </div>
 
-                    <div class="form-group-half" id="nueva_categoria_wrap" style="display:none;">
-                        {{ form.nombre_nueva_categoria.label(class="form-label") }}
-                        {{ form.nombre_nueva_categoria(class="form-control", placeholder="Ej: Especias") }}
-                        {% for error in form.nombre_nueva_categoria.errors %}
-                            <small class="text-danger">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+                    {{ macros.render_form_field(form.nombre_nueva_categoria, 'form-group-half', 'Ej: Especias', tooltip='Nombre corto y claro para la nueva categoría') }}
                 </div>
             </div>
 
-            <div class="button-group">
-                {{ form.submit(class="crear-btn") }}
-                <a type="button" href="{{ url_for('proveedores.index') }}" class="btn volver-btn">Cancelar</a>
+            <div class="providers-form-actions">
+                {{ form.submit(class="providers-btn providers-btn-primary") }}
+                <a href="{{ url_for('proveedores.index') }}" class="providers-btn providers-btn-secondary">Cancelar</a>
             </div>
 
         </form>
+        </div>
     </div>
-</div>
+</section>
 {% endblock %}
 {% block scripts %} 
 <script src="{{ url_for('static', filename='js/pages/proveedores.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const check = document.getElementById('usar_categoria_nueva');
-    const wrap = document.getElementById('nueva_categoria_wrap');
+    const wrap = document.getElementById('nombre_nueva_categoria')?.closest('.form-group-half');
     const select = document.getElementById('id_categoria_proveedor');
     if (!check || !wrap || !select) return;
 

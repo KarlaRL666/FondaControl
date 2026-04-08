@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Ticket Pedido #{{ pedido.id_pedido }}{% endblock %}
+
+{% block content %}
+{% set ns = namespace(total_calculado=0) %}
+{% for d in pedido.detalles %}
+    {% set ns.total_calculado = ns.total_calculado + ((d.producto.precio if d.producto else 0) * d.cantidad) %}
+{% endfor %}
+<div class="container py-4" style="max-width: 560px;">
+    <div class="card shadow-sm" id="ticketPrintable">
+        <div class="card-body">
+            <div class="text-center mb-3">
+                <img src="{{ url_for('static', filename='imagen/logoFonda.jpg') }}" alt="Fonda Gourmet" style="max-width: 120px;">
+                <h4 class="mb-1">Buffet - Ticket</h4>
+                <p class="text-muted mb-0">Pedido #{{ pedido.id_pedido }}</p>
+            </div>
+
+            <div class="small mb-3">
+                <div><strong>Fecha:</strong> {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') if pedido.fecha else 'N/D' }}</div>
+                <div><strong>Cliente:</strong> {{ (pedido.cliente.persona.nombre ~ ' ' ~ (pedido.cliente.persona.apellido_p or '')) if pedido.cliente and pedido.cliente.persona else 'Venta en sucursal' }}</div>
+                <div><strong>Estado:</strong> {{ pedido.estado }}</div>
+                <div><strong>Método de pago:</strong> {{ pedido.meta_pedido.metodo_pago if pedido.meta_pedido and pedido.meta_pedido.metodo_pago else 'Efectivo' }}</div>
+                <div><strong>Total del pedido:</strong> ${{ '%.2f'|format(ns.total_calculado) }}</div>
+                {% if pedido.meta_pedido and pedido.meta_pedido.metodo_pago == 'Tarjeta' %}
+                <div><strong>Titular:</strong> {{ pedido.meta_pedido.tarjeta_titular or 'N/D' }}</div>
+                <div><strong>Tarjeta:</strong> **** **** **** {{ pedido.meta_pedido.tarjeta_ultimos4 or '----' }}</div>
+                <div><strong>Vencimiento:</strong> {{ pedido.meta_pedido.tarjeta_vencimiento or 'N/D' }}</div>
+                {% endif %}
+            </div>
+
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-end">Cant.</th>
+                        <th class="text-end">P. Unit</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in pedido.detalles %}
+                    {% set subtotal_linea = ((d.producto.precio if d.producto else 0) * d.cantidad) %}
+                    <tr>
+                        <td>{{ d.producto.nombre }}</td>
+                        <td class="text-end">{{ d.cantidad }}</td>
+                        <td class="text-end">${{ '%.2f'|format(d.producto.precio) }}</td>
+                        <td class="text-end">${{ '%.2f'|format(subtotal_linea) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="text-end mt-2">
+                <h5 class="mb-0">Total: ${{ '%.2f'|format(ns.total_calculado) }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end mt-3 no-print">
+        <a href="{{ url_for('pedidos.ver_detalles_pedido', id_pedido=pedido.id_pedido) }}" class="btn btn-secondary">Volver</a>
+        <button class="btn btn-primary" onclick="window.print()">Imprimir ticket</button>
+        <button class="btn btn-terciary" id="btnDescargarPdf">Descargar PDF</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-YcsIPGdhPK4P+f9jQ7A6qfM5fQ5YFf9qQ3VIAtF5NCz7L+G2kZZgwyU0YJIUKGwEuUXXSb9VjA36TObgUJE0Pw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btnDescargarPdf = document.getElementById('btnDescargarPdf');
+    const ticketPrintable = document.getElementById('ticketPrintable');
+    if (!btnDescargarPdf || !ticketPrintable || typeof html2pdf === 'undefined') return;
+
+    btnDescargarPdf.addEventListener('click', () => {
+        const options = {
+            margin: 0.3,
+            filename: `ticket-pedido-{{ pedido.id_pedido }}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+        };
+        html2pdf().set(options).from(ticketPrintable).save();
+    });
+});
+</script>
+
+<style>
+@media print {
+    .no-print,
+    .sidebar,
+    .navbar,
+    .footer,
+    .alert-container {
+        display: none !important;
+    }
+
+    #ticketPrintable {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+{% endblock %}

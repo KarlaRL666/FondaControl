@@ -328,7 +328,315 @@ button:hover {
     margin-right: 5px;
 }
 
+/* Usuarios index */
+.users-index-page {
+    max-width: 1160px;
+    margin: 0 auto;
+    display: grid;
+    gap: 1rem;
+}
+
+.users-hero {
+    background: linear-gradient(120deg, #113a2f 0%, #1e6b54 55%, #2d8c6d 100%);
+    color: #fff;
+    border-radius: 18px;
+    padding: 1.2rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 14px 28px rgba(16, 52, 40, 0.28);
+}
+
+.users-kicker {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.82;
+}
+
+.users-hero h1 {
+    margin: 0.1rem 0 0.2rem;
+    font-size: clamp(1.35rem, 2.6vw, 2rem);
+    font-weight: 800;
+}
+
+.users-hero p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.users-hero-actions {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.users-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.7rem;
+}
+
+.users-metric-card {
+    background: #fff;
+    border: 1px solid #d7e7df;
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 8px 18px rgba(17, 35, 28, 0.08);
+}
+
+.metric-label {
+    display: block;
+    color: #567267;
+    font-size: 0.83rem;
+}
+
+.metric-value {
+    font-size: 1.6rem;
+    color: #1e4f3f;
+    line-height: 1;
+}
+
+.metric-active .metric-value {
+    color: #0a7a4f;
+}
+
+.metric-inactive .metric-value {
+    color: #b93a3a;
+}
+
+.users-panel {
+    background: #fff;
+    border: 1px solid #dce8e2;
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(25, 40, 33, 0.09);
+    padding: 1rem;
+}
+
+.users-toolbar {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 0.7rem;
+    margin-bottom: 0.8rem;
+}
+
+.users-filter-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    border: 1px solid #cdded6;
+    border-radius: 12px;
+    background: #f7fbf9;
+    padding: 0 0.85rem;
+}
+
+.users-filter-item i {
+    color: #5e7b70;
+}
+
+.users-filter-input,
+.users-filter-select {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #cdded6;
+    border-radius: 12px;
+    outline: none;
+    padding: 0 0.75rem;
+    background: #fff;
+    color: #1f2937;
+}
+
+.users-filter-input {
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.users-filter-input:focus,
+.users-filter-select:focus {
+    box-shadow: 0 0 0 3px rgba(30, 107, 84, 0.2);
+    border-color: #1e6b54;
+}
+
+.users-table-wrap {
+    overflow-x: auto;
+}
+
+.userTable {
+    margin-top: 0;
+}
+
+.userTable th,
+.userTable td {
+    vertical-align: middle;
+}
+
+.user-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3f7f6a, #245647);
+    color: #fff;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+.user-name {
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.user-meta {
+    font-size: 0.82rem;
+    color: #60726c;
+}
+
+.role-chip,
+.state-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+.role-admin { background: #ece3ff; color: #5a27a0; border-color: #d8c4ff; }
+.role-cajero { background: #dbeafe; color: #164e9a; border-color: #bfd9ff; }
+.role-cocinero { background: #fde68a; color: #7c4700; border-color: #f6d263; }
+.role-default { background: #edf2f0; color: #3e524a; border-color: #d6e2dd; }
+
+.state-active { background: #dcfce7; color: #13673f; border-color: #b6f0cc; }
+.state-inactive { background: #fee2e2; color: #8f1d1d; border-color: #f9bcbc; }
+
+.state-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.users-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.users-actions .btn-edit,
+.users-actions .btn-view,
+.users-actions .btn-delete,
+.users-actions .btn-activate {
+    border: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.users-actions .btn-edit { background: #d97706; }
+.users-actions .btn-view { background: #4f46e5; }
+.users-actions .btn-delete { background: #dc2626; }
+.users-actions .btn-activate { background: #059669; }
+
+.users-actions button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+}
+
+.users-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.users-empty i {
+    font-size: 2.6rem;
+    color: #8fa59d;
+}
+
+.users-empty p {
+    margin: 0.65rem 0 1rem;
+    font-weight: 600;
+    color: #4b635a;
+}
+
+.users-summary {
+    margin-top: 0.8rem;
+    color: #5c7068;
+    font-size: 0.9rem;
+}
+
+.users-form-page {
+    max-width: 980px;
+    margin: 0 auto;
+    display: grid;
+    gap: 0.9rem;
+}
+
+.users-form-hero {
+    background: linear-gradient(120deg, #123b30 0%, #1e6b54 55%, #2f8f6d 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: 0 12px 24px rgba(14, 53, 41, 0.24);
+}
+
+.users-form-hero h1 {
+    margin: 0.1rem 0 0.2rem;
+    font-size: clamp(1.3rem, 2.4vw, 1.9rem);
+    font-weight: 800;
+}
+
+.users-form-hero p {
+    margin: 0;
+    opacity: 0.92;
+}
+
+.users-form-page .form-container {
+    border: 1px solid #dce8e2;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(21, 35, 29, 0.08);
+}
+
+@media (max-width: 900px) {
+    .users-hero {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .users-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .users-toolbar {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
+
+    .users-form-hero {
+        border-radius: 14px;
+    }
+
+    .users-form-page .form-grid {
+        grid-template-columns: 1fr;
+    }
 
     .user-container {
         padding: 10px;

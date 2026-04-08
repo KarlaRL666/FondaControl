@@ -22,17 +22,6 @@ def role_required(*roles):
             if current_user.id_rol not in roles:
                 flash('No tienes permiso para acceder a esta página.', 'danger')
                 return redirect(url_for('auth.login'))
-            
-            if current_user.id_rol == 1:
-                flash('Bienvenido, Administrador.', 'success')
-            elif current_user.id_rol == 2:
-                flash('Bienvenido, Cocinero.', 'success')
-            elif current_user.id_rol == 3:
-                flash('Bienvenido, Cajero.', 'success')
-            elif current_user.id_rol == 4:
-                flash('Bienvenido, Cliente.', 'success')
-            else:
-                flash('Rol no reconocido.', 'danger')
 
             return func(*args, **kwargs)
         return wrapper

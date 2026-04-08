@@ -1,71 +1,201 @@
 {% extends "base.html" %}
 {% block title %}Ventas{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pages/pedidos.css') }}">
+<style>
+    .ventas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 0.65rem;
+    }
+
+    .venta-card {
+        background: #fff;
+        border: 1px solid #e6edf5;
+        border-radius: 12px;
+        padding: 0.7rem;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+    }
+
+    .venta-actions {
+        display: flex;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .venta-kpi {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 0.55rem;
+        font-size: 0.84rem;
+    }
+
+    .venta-kpi div {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        padding: 0.4rem 0.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1>Gestión de Ventas</h1>
-<div class="toolbar">
-    <input type="text" class="search" placeholder="Buscar venta...">
-    <select id="filtroEstado" class="filter">
-        <option value="todos">Todos los estados</option>
-        <option value="completada">Completadas</option>
-        <option value="cancelada">Canceladas</option>
-        <option value="pendiente">Pendientes</option>
-    </select>
-    <a type="button" class="btn btn-primary" href="{{ url_for('ventas.nueva') }}">Nueva venta</a>
+{% set total_ventas = ventas|length if ventas else 0 %}
+{% set total_completadas = ventas|selectattr('estado', 'equalto', 'Completada')|list|length if ventas else 0 %}
+{% set total_pendientes = ventas|selectattr('estado', 'equalto', 'Pendiente')|list|length if ventas else 0 %}
+{% set total_canceladas = ventas|selectattr('estado', 'equalto', 'Cancelada')|list|length if ventas else 0 %}
+<div class="pedidos-index-hero">
+    <div>
+        <p class="hero-kicker mb-2">Operación diaria</p>
+        <h1 class="mb-2">Ventas</h1>
+        <p class="hero-subtitle mb-0">Consulta estado de cobro, utilidad y acciones de cada venta.</p>
+    </div>
+    <div class="pedidos-hero-stats">
+        <div class="hero-count-chip">
+            <span>{{ total_ventas }}</span>
+            <small>registradas</small>
+        </div>
+        <div class="hero-count-chip hero-count-chip-soft">
+            <span>{{ total_pendientes }}</span>
+            <small>pendientes</small>
+        </div>
+        <div class="hero-count-chip hero-count-chip-soft">
+            <span>{{ total_completadas }}</span>
+            <small>completadas</small>
+        </div>
+        <div class="hero-count-chip hero-count-chip-soft">
+            <span>{{ total_canceladas }}</span>
+            <small>canceladas</small>
+        </div>
+    </div>
 </div>
 
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>No. Venta</th>
-            <th>Fecha</th>
-            <th>Total</th>
-            <th>Costo</th>
-            <th>Utilidad</th>
-            <th>Método de pago</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-        </thead>
-    <tbody>
-        {% if ventas %}
-        {% for v in ventas %}
+<div class="pedidos-index-shell">
+    <div class="toolbar pedidos-toolbar mb-3">
+        <select id="filtroEstado" class="filter">
+            <option value="todos">Todos los estados</option>
+            <option value="completada">Completadas</option>
+            <option value="cancelada">Canceladas</option>
+            <option value="pendiente">Pendientes</option>
+        </select>
+        <a type="button" class="btn btn-primary" href="{{ url_for('ventas.nueva') }}">Nueva venta</a>
+    </div>
 
-        <tr>
-            <td>{{ v.id_venta }}</td>
-            <td>{{ v.fecha.strftime('%d/%m/%Y %H:%M') if v.fecha else '' }}</td>
-            <td>${{ "%.2f"|format(v.total) }}</td>
-            <td>${{ "%.2f"|format(v.costo_total) }}</td>
-            <td>
-                <span class="badge {% if v.utilidad_total >= 0 %}bg-success{% else %}bg-danger{% endif %}">
-                    ${{ "%.2f"|format(v.utilidad_total) }}
-                </span>
-            </td>
-            <td>{{ v.metodo_pago }}</td>
-            <td>
-                <span class="badge {% if v.estado == 'Completada' %}bg-success{% elif v.estado == 'Pendiente' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                    {{ v.estado }}
-                </span>
-            </td>
-            <td>
+    {% if ventas %}
+    <div class="ventas-grid" id="ventasGrid">
+        {% for v in ventas %}
+        <article class="venta-card" data-estado="{{ (v.estado or '')|lower }}">
+            <div class="pedido-mobile-head mb-2">
+                <div>
+                    <p class="pedido-mobile-kicker mb-1">Venta #{{ v.id_venta }}</p>
+                    <h3 class="pedido-mobile-title mb-0">{{ v.fecha.strftime('%d/%m/%Y %H:%M') if v.fecha else '' }}</h3>
+                </div>
+                <span class="pedido-mobile-badge badge-linea">${{ "%.2f"|format(v.total) }}</span>
+            </div>
+
+            <div class="venta-kpi">
+                <div><strong>Costo:</strong> ${{ "%.2f"|format(v.costo_total) }}</div>
+                <div><strong>Utilidad:</strong> ${{ "%.2f"|format(v.utilidad_total) }}</div>
+                <div><strong>Pago:</strong> {{ v.metodo_pago if v.estado == 'Completada' else 'Pendiente' }}</div>
+                <div>
+                    <strong>Estado:</strong>
+                    <span class="badge {% if v.estado == 'Completada' %}bg-success{% elif v.estado == 'Pendiente' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                        {{ v.estado_pago if v.estado == 'Completada' else v.estado }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="pedido-mobile-block">
+                <span class="pedido-mobile-label">Productos</span>
+                <ul class="pedido-mobile-list">
+                    {% for p in v.productos %}
+                    <li>
+                        <span>{{ p.nombre }}</span>
+                        <span class="pedido-mobile-chip">x{{ p.cantidad }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="venta-actions">
+                {% if v.estado == 'Completada' %}
                 <a href="{{ url_for('ventas.detalles', id_venta=v.id_venta) }}" class="btn btn-info btn-sm">Ver ticket</a>
-            </td>
-        </tr>
-            {% endfor %}
-        {%else%}
-            <tr>
-                <td colspan="8" class="px-6 py-20 text-center">
-                    <div class="flex flex-col items-center gap-4">
-                        <i class="bi bi-box-seam text-7xl text-gray-300 dark:text-gray-600"></i>
-                        <p class="text-xl font-medium text-gray-500 dark:text-gray-400">No hay ventas registradas</p>
-                        <a href="{{ url_for('ventas.nueva') }}" 
-                           class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-linear-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:shadow-xl transition-all">
-                            <i class="bi bi-plus-circle"></i>
-                            Crear primer producto
-                        </a>
-                    </div>
-                </td>
-            </tr>
-        {% endif %}
-    </tbody>
-</table>
+                {% else %}
+                <a href="{{ url_for('ventas.detalles', id_venta=v.id_venta) }}" class="btn btn-warning btn-sm">Procesar venta</a>
+                {% endif %}
+                {% if v.estado != 'Cancelada' %}
+                <button type="button" class="btn btn-danger btn-sm" onclick="cancelarVenta({{ v.id_venta }})">Cancelar</button>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="pedidos-empty-state">
+        <i class="bi bi-receipt"></i>
+        <p class="text-center mb-2">No hay ventas registradas</p>
+        <a href="{{ url_for('ventas.nueva') }}" class="btn btn-primary btn-sm">Crear venta</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function cancelarVenta(idVenta) {
+    Swal.fire({
+        title: '¿Cancelar venta?',
+        text: `Se devolverá el stock de la venta #${idVenta}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'No'
+    }).then((result) => {
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        fetch("/ventas/eliminar", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')?.content || ""
+            },
+            body: JSON.stringify({ id_venta: idVenta })
+        })
+        .then(r => r.json())
+        .then(data => {
+            Swal.fire({
+                icon: data.success ? 'success' : 'error',
+                title: data.message || 'Sin respuesta'
+            }).then(() => {
+                if (data.success) {
+                    window.location.reload();
+                }
+            });
+        })
+        .catch(() => {
+            Swal.fire('Error', 'No se pudo cancelar la venta', 'error');
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const filtroEstado = document.getElementById('filtroEstado');
+    const cards = Array.from(document.querySelectorAll('.venta-card'));
+
+    function aplicarFiltro() {
+        const estado = (filtroEstado?.value || 'todos').toLowerCase();
+        cards.forEach((card) => {
+            const estadoCard = (card.dataset.estado || '').toLowerCase();
+            card.style.display = (estado === 'todos' || estadoCard === estado) ? '' : 'none';
+        });
+    }
+
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', aplicarFiltro);
+    }
+    aplicarFiltro();
+});
+</script>
 {% endblock %}

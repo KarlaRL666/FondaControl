@@ -19,18 +19,51 @@
     </div>
 </div>
 
-{% set ns = namespace(tiene_faltantes=false) %}
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <span class="badge bg-info text-dark">Solicitud: {{ produccion.fecha_solicitud.strftime('%d/%m/%Y %H:%M') if produccion.fecha_solicitud else 'N/D' }}</span>
+    <span class="badge bg-info text-dark">Necesaria: {{ produccion.fecha_necesaria.strftime('%d/%m/%Y %H:%M') if produccion.fecha_necesaria else 'N/D' }}</span>
+    <span class="badge {% if produccion.prioridad == 'Alta' %}bg-danger{% elif produccion.prioridad == 'Media' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">Prioridad: {{ produccion.prioridad or 'Media' }}</span>
+</div>
+
+<div class="mb-3" style="max-width: 420px;">
+    <label class="form-label"><strong>Progreso de solicitud</strong></label>
+    <div class="progress" style="height: 12px;">
+        <div class="progress-bar bg-success js-progress" role="progressbar" style="width: 0" data-progress="{{ produccion.progreso or 0 }}"></div>
+    </div>
+    <small>{{ produccion.progreso or 0 }}%</small>
+</div>
+
+{% set ns = namespace(tiene_faltantes=false, tiene_lineas_sin_ingredientes=false) %}
 {% for fila in produccion.filas %}
     {% if fila.ingredientes|selectattr('faltante')|list|length > 0 %}
         {% set ns.tiene_faltantes = true %}
     {% endif %}
+    {% if fila.sin_ingredientes %}
+        {% set ns.tiene_lineas_sin_ingredientes = true %}
+    {% endif %}
 {% endfor %}
 
 <div class="toolbar produccion-toolbar" style="margin-bottom: 1rem;">
-    {% if produccion.estado != 'Completada' and not ns.tiene_faltantes %}
-        <a href="{{ url_for('produccion.completar', id=produccion.id_produccion) }}" class="btn btn-primary">Completar producción</a>
+    {% if produccion.estado != 'Completada' and not ns.tiene_faltantes and not ns.tiene_lineas_sin_ingredientes %}
+        <form method="POST" action="{{ url_for('produccion.completar', id=produccion.id_produccion) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary">Completar producción</button>
+        </form>
+    {% elif produccion.estado != 'Completada' and ns.tiene_lineas_sin_ingredientes %}
+        <span class="badge bg-secondary">No se puede producir: hay líneas sin ingredientes en receta.</span>
     {% elif produccion.estado != 'Completada' and ns.tiene_faltantes %}
-        <a href="{{ url_for('produccion.completar', id=produccion.id_produccion) }}" class="btn btn-warning">Solicitar compra</a>
+        {% if produccion.compra_pendiente_id %}
+            <span class="badge bg-warning text-dark">Ya hay una compra solicitada para estos faltantes.</span>
+        {% else %}
+            <form method="POST" action="{{ url_for('produccion.completar', id=produccion.id_produccion) }}" class="d-inline js-form-solicitar-compra">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="fecha_requerida_compra" value="">
+                <button type="button" class="btn btn-warning js-btn-solicitar-compra">Solicitar compra</button>
+            </form>
+        {% endif %}
+    {% endif %}
+    {% if (id_compra or produccion.compra_pendiente_id) and current_user.id_rol in [1, 2, 3] %}
+        <a href="{{ url_for('compras.ver', id=(id_compra or produccion.compra_pendiente_id)) }}" class="btn btn-info">Ver orden de compra</a>
     {% endif %}
     <a href="{{ url_for('produccion.index')}}" class="btn btn-delete">Volver</a>
 </div>
@@ -41,9 +74,12 @@
             <tr>
                 <th>#</th>
                 <th>Producto</th>
-                <th>Cantidad Solicitada</th>
+                <th>Cantidad pendiente</th>
+                <th>Producción acumulada</th>
                 <th>Ingredientes necesarios</th>
-                <th>Estado ingredientes</th>
+                <th>Estado línea</th>
+                <th>Progreso línea</th>
+                <th>Acción</th>
             </tr>
         </thead>
 
@@ -51,31 +87,86 @@
             {% for p in produccion.filas %}
             <tr>
                 <td>#{{ p.id_detalle }}</td>
-                <td>{{ p.producto }}{{p.unidad_medida}}</td>
-                <td>{{ p.cantidad }}</td>
+                <td>{{ p.producto }}</td>
                 <td>
-    <ul>
-    {% for ing in p.ingredientes %}
-        <li class="{{ 'text-danger' if ing.faltante else 'text-success' }}">
-            {{ ing.nombre }} →
-            Req: {{ ing.requerido }} {{ ing.unidad }},
-            Stock: {{ ing.stock }}
-        </li>
-    {% endfor %}
-    </ul>
-</td>
-
-<td>
-    {% if p.ingredientes|selectattr("faltante")|list|length > 0 %}
-        {% if produccion.estado == 'En Proceso' %}
-            <span class="badge bg-warning text-dark">Compra solicitada</span>
-        {% else %}
-            <span class="badge bg-danger">Faltan ingredientes</span>
-        {% endif %}
-    {% else %}
-        <span class="badge bg-success">Ingredientes completos</span>
-    {% endif %}
-    </td>
+                    <div><strong>Restante:</strong> {{ p.cantidad_restante }}</div>
+                    <div class="text-muted"><small>Objetivo: {{ p.cantidad }}</small></div>
+                </td>
+                <td>
+                    <div><strong>Producido:</strong> {{ p.cantidad_producida }}</div>
+                    <div><strong>Restante:</strong> {{ p.cantidad_restante }}</div>
+                </td>
+                <td>
+                    {% if p.sin_ingredientes %}
+                        <span class="badge bg-secondary">Sin ingredientes en receta</span>
+                    {% else %}
+                    <ul>
+                        {% for ing in p.ingredientes %}
+                            <li class="{{ 'text-danger' if ing.faltante else 'text-success' }}">
+                                {{ ing.nombre }} →
+                                Req: {{ ing.requerido }} {{ ing.unidad }},
+                                Stock: {{ ing.stock }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if p.completado %}
+                        <span class="badge bg-success">Completada</span>
+                    {% elif p.sin_ingredientes %}
+                        <span class="badge bg-secondary">Receta incompleta</span>
+                    {% elif p.puede_completar %}
+                        <span class="badge bg-info">Lista para completar</span>
+                    {% elif produccion.estado == 'En Proceso' %}
+                        <span class="badge bg-warning text-dark">Compra solicitada</span>
+                    {% else %}
+                        <span class="badge bg-danger">Faltan ingredientes</span>
+                    {% endif %}
+                </td>
+                <td style="min-width: 160px;">
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success js-progress" role="progressbar" style="width: 0" data-progress="{{ p.progreso or 0 }}"></div>
+                    </div>
+                    <small>{{ p.progreso or 0 }}%</small>
+                </td>
+                <td>
+                    {% if not p.completado %}
+                        <form method="POST" action="{{ url_for('produccion.procesar_detalle', id_produccion=produccion.id_produccion, id_detalle=p.id_detalle) }}" class="js-form-produccion-detalle">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="fecha_requerida_compra" value="">
+                            <div class="d-flex flex-column gap-2">
+                                <small class="text-muted d-block">
+                                    <strong>Cantidad por receta:</strong> {{ p.cantidad_por_receta or 1 }} unidades
+                                </small>
+                                <label class="form-label mb-1">Veces a producir:</label>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    min="1"
+                                    max="{{ p.veces_restantes or 1 }}"
+                                    name="cantidad_producir"
+                                    value="1"
+                                    class="form-control form-control-sm"
+                                    {% if (p.veces_restantes or 1) <= 0 %}disabled{% endif %}
+                                    title="Cada vez se producen {{ p.cantidad_por_receta or 1 }} unidades"
+                                >
+                                <button type="submit" class="btn btn-sm btn-success" {% if (p.veces_restantes or 1) <= 0 or p.sin_ingredientes %}disabled{% endif %}>
+                                    🍳 Producir receta
+                                </button>
+                                {% if not p.puede_completar and not p.sin_ingredientes and not produccion.compra_pendiente_id %}
+                                    <button type="button" class="btn btn-sm btn-warning js-btn-solicitar-compra-detalle">
+                                        Solicitar compra
+                                    </button>
+                                {% elif not p.puede_completar and not p.sin_ingredientes and produccion.compra_pendiente_id %}
+                                    <span class="badge bg-warning text-dark">Compra ya solicitada</span>
+                                {% endif %}
+                            </div>
+                        </form>
+                    {% else %}
+                        <span class="badge bg-success">Procesada</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -94,13 +185,19 @@
     </div>
 </div>
 
+<div class="toolbar produccion-toolbar" style="margin-bottom: 1rem;">
+    <a href="{{ url_for('produccion.index')}}" class="btn btn-delete">Volver</a>
+</div>
+
 <div class="produccion-index-shell">
 
     <h2 class="section-title">Detalle de orden completada</h2>
 
     <ul class="info-list">
-        <li><strong>Fecha Solicitada: {{ produccion.fecha.strftime('%d/%m/%Y') if produccion.fecha else '' }}</strong></li>
-        <li><strong>Fecha Completada: {{ produccion.fecha_completada.strftime('%d/%m/%Y') if produccion.fecha_completada else '' }}</strong></li>
+        <li><strong>Fecha Solicitada:</strong> {{ produccion.fecha_solicitud.strftime('%d/%m/%Y %H:%M') if produccion.fecha_solicitud else 'N/D' }}</li>
+        <li><strong>Fecha Necesaria:</strong> {{ produccion.fecha_necesaria.strftime('%d/%m/%Y %H:%M') if produccion.fecha_necesaria else 'N/D' }}</li>
+        <li><strong>Prioridad:</strong> {{ produccion.prioridad or 'Media' }}</li>
+        <li><strong>Fecha Completada:</strong> {{ produccion.fecha_completada.strftime('%d/%m/%Y %H:%M') if produccion.fecha_completada else 'Sin completar' }}</li>
         <li><strong class="badge bg-success">Estado: {{ produccion.estado }}</strong></li>
     </ul>
 
@@ -145,4 +242,61 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.js-progress').forEach((bar) => {
+        const value = Number(bar.dataset.progress || 0);
+        bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+    });
+
+    const btnSolicitarCompraGlobal = document.querySelector('.js-btn-solicitar-compra');
+    if (btnSolicitarCompraGlobal) {
+        btnSolicitarCompraGlobal.addEventListener('click', async () => {
+            const form = btnSolicitarCompraGlobal.closest('form');
+            if (!form) return;
+            const resultado = await pedirDatosCompra();
+            if (!resultado) return;
+            form.querySelector('input[name="fecha_requerida_compra"]').value = resultado.fecha;
+            form.submit();
+        });
+    }
+
+    document.querySelectorAll('.js-form-produccion-detalle').forEach((form) => {
+        const boton = form.querySelector('.js-btn-solicitar-compra-detalle');
+        if (!boton) return;
+
+        boton.type = 'button';
+        boton.addEventListener('click', async () => {
+            const resultado = await pedirDatosCompra();
+            if (!resultado) return;
+            form.querySelector('input[name="fecha_requerida_compra"]').value = resultado.fecha;
+            form.submit();
+        });
+    });
+
+    async function pedirDatosCompra() {
+        const ahora = new Date();
+        ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+        const minimo = ahora.toISOString().slice(0, 16);
+
+        const fechaResp = await Swal.fire({
+            title: 'Fecha y hora requerida',
+            input: 'datetime-local',
+            inputValue: minimo,
+            inputAttributes: { min: minimo },
+            showCancelButton: true,
+            confirmButtonText: 'Siguiente',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => (!value ? 'Debes indicar fecha y hora requerida' : undefined),
+        });
+
+        if (!fechaResp.isConfirmed) return null;
+
+        return { fecha: fechaResp.value };
+    }
+});
+</script>
 {% endblock %}

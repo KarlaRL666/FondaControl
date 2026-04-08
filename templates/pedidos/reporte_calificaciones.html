@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Reporte de calificaciones{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-3">Reporte de calificaciones</h1>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>General</th>
+                    <th>Prom. productos</th>
+                    <th>Comentario</th>
+                    <th>Productos</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in calificaciones %}
+                <tr>
+                    <td>{{ c.cliente }}</td>
+                    <td>{{ c.calificacion }}</td>
+                    <td>{{ c.promedio_productos }}</td>
+                    <td>{{ c.comentario }}</td>
+                    <td>{{ c.productos }}</td>
+                    <td>{{ c.fecha }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">No hay calificaciones registradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

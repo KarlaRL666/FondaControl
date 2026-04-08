@@ -5,22 +5,53 @@
 <div class="pedido-detalle-card">
 	<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
 		<div>
-			<h1 class="pedido-title mb-1">Ticket de Venta #{{ venta.id_venta }}</h1>
+			<h1 class="pedido-title mb-1">
+				{% if venta.estado == 'Completada' %}
+				Ticket de Venta #{{ venta.id_venta }}
+				{% else %}
+				Venta Pendiente #{{ venta.id_venta }}
+				{% endif %}
+			</h1>
 			<p class="mb-0 text-muted">Fecha: {{ venta.fecha.strftime('%d/%m/%Y %H:%M') if venta.fecha else '' }} | Cajero: {{ venta.usuario }}</p>
 		</div>
 		<div class="d-flex gap-2">
+			{% if venta.estado == 'Completada' %}
 			<button type="button" class="btn btn-outline-primary" onclick="window.print()">Imprimir ticket</button>
+			{% endif %}
 			<a href="{{ url_for('ventas.index') }}" class="btn btn-secondary">Volver</a>
 		</div>
 	</div>
 
 	<ul class="info-list">
-		<li><strong>Método de pago:</strong> {{ venta.metodo_pago }}</li>
-		<li><strong>Estado:</strong> {{ venta.estado }}</li>
+		<li><strong>Método de pago:</strong> {{ venta.metodo_pago if venta.estado == 'Completada' else 'Pendiente de captura' }}</li>
+		<li><strong>Estado:</strong> {{ venta.estado_pago if venta.estado == 'Completada' else venta.estado }}</li>
 		<li><strong>Total:</strong> ${{ '%.2f'|format(venta.total) }}</li>
 		<li><strong>Costo:</strong> ${{ '%.2f'|format(venta.costo_total) }}</li>
 		<li><strong>Utilidad:</strong> ${{ '%.2f'|format(venta.utilidad_total) }} ({{ '%.2f'|format(venta.margen_porcentaje) }}%)</li>
 	</ul>
+
+	{% if venta.estado != 'Completada' and venta.estado != 'Cancelada' %}
+	<div class="mt-3 p-3 border rounded">
+		<div class="mb-2"><strong>Completar venta</strong></div>
+		<div class="row g-2 align-items-end">
+			<div class="col-md-4">
+				<label class="form-label">Método de pago</label>
+				<select class="form-select" id="metodoPagoVentaDetalle">
+					<option value="Efectivo">Efectivo</option>
+					<option value="Tarjeta">Tarjeta</option>
+					<option value="Transferencia">Transferencia</option>
+				</select>
+			</div>
+			<div class="col-md-5">
+				<label class="form-label">Fecha y hora requerida (si pasa a producción)</label>
+				<input type="datetime-local" class="form-control" id="fechaNecesariaVentaDetalle">
+			</div>
+			<div class="col-md-3 d-grid">
+				<button type="button" class="btn btn-success" id="btnCompletarVentaDetalle">Completar venta</button>
+			</div>
+		</div>
+	</div>
+	{% endif %}
 
 	<div class="detalle-table-wrap mt-3">
 		<table class="data-table detalle-table">
@@ -57,4 +88,47 @@
 		</table>
 	</div>
 </div>
+
+{% if venta.estado != 'Completada' and venta.estado != 'Cancelada' %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+	const fechaNecesaria = document.getElementById('fechaNecesariaVentaDetalle');
+	const btnCompletar = document.getElementById('btnCompletarVentaDetalle');
+	const metodoPago = document.getElementById('metodoPagoVentaDetalle');
+
+	if (fechaNecesaria && !fechaNecesaria.value) {
+		const ahora = new Date();
+		ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+		fechaNecesaria.value = ahora.toISOString().slice(0, 16);
+		fechaNecesaria.min = ahora.toISOString().slice(0, 16);
+	}
+
+	if (btnCompletar) {
+		btnCompletar.addEventListener('click', () => {
+			fetch("{{ url_for('ventas.completar', id_venta=venta.id_venta) }}", {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+				},
+				body: JSON.stringify({
+					metodo_pago: metodoPago ? metodoPago.value : 'Efectivo',
+					fecha_necesaria: fechaNecesaria ? fechaNecesaria.value : ''
+				})
+			})
+				.then((r) => r.json())
+				.then((data) => {
+					Swal.fire({
+						icon: data.success ? 'success' : 'warning',
+						title: data.message || 'Resultado'
+					}).then(() => window.location.reload());
+				})
+				.catch(() => {
+					Swal.fire('Error', 'No se pudo completar la venta', 'error');
+				});
+		});
+	}
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -13,35 +13,274 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/index.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/layout/navbar.css') }}" type="text/css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/enhanced-ui.css') }}" type="text/css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/layout/sidebar.css') }}" type="text/css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/components/forms.css') }}" type="text/css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/components/buttons.css') }}" type="text/css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/components/modals.css') }}" type="text/css">    
     <link rel="stylesheet" href="{{ url_for('static', filename='style/components/tables.css') }}" type="text/css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/design-system.css') }}" type="text/css">
     {% block head %}{% endblock %}
     {% block styles %}{% endblock %}
+    <style>
+        /* Mejoras generales de diseño */
+        :root {
+            --bs-body-font-family: 'Nunito Sans', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-smooth: antialiased;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Mejorar scroll comportamiento */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Estilos para navegación mejorada */
+        .app-top-navbar {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .navbar-brand {
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .navbar-brand:hover {
+            transform: scale(1.05);
+        }
+
+        /* Sidebar mejorado */
+        .sidebar {
+            background: var(--naranja);
+            border-right: 1px solid rgba(255,255,255,0.18);
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            color: #f3e7d3 !important;
+            border-radius: 0.5rem;
+            margin-bottom: 0.25rem;
+            transition: all var(--transition-speed) ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: rgba(255,255,255,0.12);
+            color: #fff !important;
+            padding-left: 1.5rem;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: rgba(255,255,255,0.2) !important;
+            color: #fff !important;
+            border-left: 3px solid rgba(255,255,255,0.6);
+        }
+
+        /* Main content mejorado */
+        .main-content {
+            background: #f8f9fa;
+            padding: 2rem 1.5rem;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* Tarjetas y componentes */
+        .card {
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: box-shadow var(--transition-speed) ease;
+            border-radius: 0.75rem;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        /* Botones mejorados */
+        .btn {
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all var(--transition-speed) ease;
+            text-transform: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Tablas mejoradas */
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            border-color: #e0e0e0;
+        }
+
+        .table tbody tr {
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Formularios mejorados */
+        .form-control, .form-select {
+            border-color: #ddd;
+            border-radius: 0.5rem;
+            transition: border-color var(--transition-speed) ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #0066cc;
+            box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.15);
+        }
+
+        /* Badges mejorados */
+        .badge {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            font-size: 0.813rem;
+        }
+
+        /* Dropdowns mejorados */
+        .dropdown-menu {
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            border-radius: 0.75rem;
+            animation: dropdownSlide 0.2s ease;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+
+            .sidebar {
+                max-height: calc(100vh - 70px);
+            }
+        }
+
+        /* Accesibilidad y focus states */
+        *:focus-visible {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+        }
+
+        /* Scrollbar personalizado */
+        .sidebar::-webkit-scrollbar,
+        .table-responsive::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track,
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb,
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover,
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+
+        /* Ratings Dropdown Styles */
+        #ratingsBellButton {
+            transition: all 0.3s ease;
+        }
+
+        #ratingsBellButton:hover {
+            background-color: rgba(248, 196, 79, 0.15) !important;
+            color: #f8c44f !important;
+        }
+
+        #ratingsDropdown .dropdown-menu {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        #ratingsDropdown .dropdown-item {
+            padding: 0.75rem 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+        #ratingsDropdown .dropdown-item:hover {
+            background-color: rgba(0, 102, 204, 0.15);
+            border-radius: 0.5rem;
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.3rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+    </style>
 </head>
 <body>
+{% set use_sidebar = current_user.is_authenticated and request.endpoint != 'auth.login' and request.endpoint != 'cuenta.crear' and request.endpoint != 'tienda.index' and request.endpoint != 'auth.verificar_2fa' and request.endpoint != 'auth.forgot_password' and request.endpoint != 'auth.reset_password' %}
+{% set show_global_footer = (request.endpoint != 'auth.login' and request.endpoint != 'auth.verificar_2fa' and request.endpoint != 'auth.forgot_password' and request.endpoint != 'auth.reset_password') and (not current_user.is_authenticated or current_user.id_rol == 4) %}
+{% set show_navbar = request.endpoint != 'auth.login' and request.endpoint != 'auth.verificar_2fa' and request.endpoint != 'auth.forgot_password' and request.endpoint != 'auth.reset_password' %}
 
-{% include "includes/_navbar.html" %}
 {% include "includes/_alerts.html" %}
-{% if current_user.is_authenticated and current_user.id_rol in [1, 2, 3, 4] %}
-   <div class="app-container">
+{% if use_sidebar %}
+<button id="mobileMenuToggle" class="sidebar-mobile-toggle" type="button" aria-label="Abrir navegación" title="Menú">
+    <i class="bi bi-list"></i>
+</button>
+{% endif %}
+
+{% if show_navbar %}
+{% include "includes/_navbar.html" %}
+{% endif %}
+<div class="app-container{% if not use_sidebar %} app-container-no-sidebar{% endif %}">
+    {% if use_sidebar %}
     {% include "includes/_sidebar.html" %}
-    <main class="main-content">
+    {% endif %}
+
+    <main class="main-content{% if not use_sidebar %} main-content-full{% endif %}">
         {% block content %}{% endblock %}
     </main>
 </div>
-{% else %}
-    <main>
-        {{ self.content() }}
-        {% block container %}{% endblock %}
-    </main>
-    <footer>
-    {% include "includes/_footer.html" %}
-    </footer>
-{% endif %}
+
+ {% if show_global_footer %}
+        <footer class="app-footer">
+            {% include "includes/_footer.html" %}
+        </footer>
+        {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

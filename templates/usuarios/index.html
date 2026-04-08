@@ -4,164 +4,140 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
 {% endblock %}
 {% block content %}
-    <h1>Gestión de Usuarios</h1>
-    
-<div class="button-group">
-   <button type="button" class="crear-btn" onclick=window.location.href='{{ url_for("usuarios.crear") }}'>Nuevo</button>
-<button type="button" class="volver-btn" onclick=window.location.href='{{ url_for("auth.redirigir") }}'>Volver</button>
-</div>
-<div class="toolbar">
-    <input type="text" id="searchInput" 
-    class="px-5 py-3.5 rounded-2xl border border-gray-300 dark:border-gray-600 
-                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-800
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           cursor-pointer text-sm min-w-[140px]" placeholder="Buscar...">
-     <select id="roleFilter" 
-                    class="px-5 py-3.5 rounded-2xl border border-gray-300 dark:border-gray-600 
-                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-800
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           cursor-pointer text-sm min-w-[140px]">
+<section class="users-index-page">
+    <div class="users-hero">
+        <div>
+            <p class="users-kicker">Administración</p>
+            <h1>Gestión de usuarios</h1>
+            <p>Administra cuentas del personal, estados y accesos del sistema.</p>
+        </div>
+        <div class="button-group users-hero-actions">
+            <a class="crear-btn" href="{{ url_for('usuarios.crear') }}">
+                <i class="bi bi-person-plus"></i> Nuevo
+            </a>
+            <a class="volver-btn" href="{{ url_for('auth.redirigir') }}">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="users-metrics">
+        <article class="users-metric-card">
+            <span class="metric-label">Total</span>
+            <strong class="metric-value">{{ usuarios|length }}</strong>
+        </article>
+        <article class="users-metric-card metric-active">
+            <span class="metric-label">Activos</span>
+            <strong class="metric-value">{{ usuarios|selectattr('estado_bool')|list|length }}</strong>
+        </article>
+        <article class="users-metric-card metric-inactive">
+            <span class="metric-label">Inactivos</span>
+            <strong class="metric-value">{{ usuarios|rejectattr('estado_bool')|list|length }}</strong>
+        </article>
+    </div>
+
+    <div class="users-panel">
+        <div class="toolbar users-toolbar">
+            <div class="users-filter-item users-filter-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" class="users-filter-input" placeholder="Buscar por nombre, usuario o correo..." title="Filtra por nombre completo, usuario, correo y texto visible en la tabla.">
+            </div>
+
+            <select id="roleFilter" class="users-filter-select" title="Filtra usuarios por rol de acceso.">
                 <option value="all">Todos los roles</option>
                 <option value="administrador">Administrador</option>
                 <option value="cajero">Cajero</option>
                 <option value="cocinero">Cocinero</option>
                 <option value="cliente">Cliente</option>
             </select>
-            
-            <select id="statusFilter" 
-                    class="px-5 py-3.5 rounded-2xl border border-gray-300 dark:border-gray-600 
-                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-800
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           cursor-pointer text-sm min-w-[140px]">
+
+            <select id="statusFilter" class="users-filter-select" title="Filtra usuarios activos o inactivos.">
                 <option value="all">Todos los estados</option>
                 <option value="active">Activos</option>
                 <option value="inactive">Inactivos</option>
             </select>
-</div>
-
-
-<table class="userTable data-table" id="userTable">
-    <thead>
-        <tr>
-            <th onclick="sortTable(0)">
-                <div class="flex items-center gap-2">
-                            Nombre Completo
-                            <i class="bi bi-arrow-down-up text-xs"></i>
-                        </div>
-                    </th>
-                <th onclick="sortTable(2)">
-                 <div class="flex items-center gap-2">
-                            Rol
-                            <i class="bi bi-arrow-down-up text-xs"></i>
-                        </div>
-                    </th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-        </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-gray-600 dark:bg-gray-800">
-                {% if usuarios %}
-                    {% for usuario in usuarios %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/70 transition-all duration-300 user-row"
-                        data-nombre="{{ usuario.nombre or 'N/A' }} {{ usuario.apellido_paterno or '' }} {{ usuario.apellido_materno or '' }}"
-                        data-rol="{% if usuario.rol_nombre %}{{ usuario.rol_nombre.lower() }}{% else %}sin rol{% endif %}"
-                        data-estado="{% if usuario.estado_bool %}active{% else %}inactive{% endif %}">
-                        
-                        <td class="px-4 md:px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 md:w-10 md:h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md text-sm md:text-base flex-shrink-0">
-                                    {{ (usuario.nombre[0] if usuario.nombre else 'U') | upper }}
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="font-semibold text-gray-900 dark:text-white text-sm md:text-base truncate">
-                                        {{ usuario.nombre }} {{ usuario.apellido_paterno or '' }} {{ usuario.apellido_materno or '' }}
-                                    </div>
-                                    <div class="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
-                                        @{{ usuario.username }}
-                                    </div>
-                                </div>
-                            </div>
-                        </td> 
-                       <td class="px-4 md:px-6 py-4">
-    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl 
-        {% if usuario.rol_nombre == 'Administrador' %}bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800
-        {% elif usuario.rol_nombre == 'Cajero' %}bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800
-        {% elif usuario.rol_nombre == 'Cocinero' %}bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800
-        {% elif usuario.rol_nombre == 'Cliente' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800
-        {% else %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600{% endif %}">
-        {{ usuario.rol_nombre or 'Sin rol' }}
-    </span>
-</td>
-                        
-                        <td class="px-4 md:px-6 py-4">
-    <span class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-2xl
-        {% if usuario.estado_bool %}
-            bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border border-green-200 dark:border-green-800
-        {% else %}
-            bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 border border-red-200 dark:border-red-800
-        {% endif %}">
-        <span class="w-2 h-2 rounded-full 
-            {% if usuario.estado_bool %}bg-green-500 animate-pulse{% else %}bg-red-500{% endif %}"></span>
-        {{ usuario.estado_display if usuario.estado_display is defined else ('Activo' if usuario.estado_bool else 'Inactivo') }}
-    </span>
-</td>
-
-                        <td class="px-4 md:px-6 py-4">
-                            <div class="flex items-center justify-center gap-1.5 md:gap-2">
-                                <button onclick=window.location.href='{{ url_for("usuarios.editar", id_usuario=usuario.id_usuario) }}'
-                                        class="btn-edit p-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all hover:scale-105"
-                                        title="Editar">
-                                    <i class="bi bi-pencil text-lg"></i>
-                                </button>
-                                <button onclick=window.location.href='{{ url_for("usuarios.detalles", id_usuario=usuario.id_usuario) }}'
-                                        class="btn-view p-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all hover:scale-105"
-                                        title="Ver detalles">
-                                    <i class="bi bi-eye text-lg"></i>
-                                </button>
-                                 {% if usuario.estado_bool %}
-                                <button onclick="desactivarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre }}')"
-                                        class="btn-delete p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all hover:scale-105"
-                                        title="Desactivar">
-                                    <i class="bi bi-ban text-lg"></i>       
-                                </button>
-                                {% else %}
-                                <button onclick="activarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre }}')"
-                                        class="btn-activate p-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all hover:scale-105"
-                                        title="Activar">
-                                    <i class="bi bi-check-circle text-lg"></i>
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="5" class="px-6 py-20 text-center">
-                            <div class="flex flex-col items-center gap-4">
-                                <i class="bi bi-people text-7xl text-gray-300 dark:text-gray-600"></i>
-                                <p class="text-xl font-medium text-gray-500 dark:text-gray-400">No hay usuarios registrados</p>
-                                <a href="{{ url_for('usuarios.crear') }}" 
-                                   class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:shadow-xl transition-all">
-                                    <i class="bi bi-person-plus"></i>
-                                    Crear primer usuario
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Paginación y contador -->
-    <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
-        <div class="text-gray-500 dark:text-gray-400">
-            Mostrando <span id="showingStart">1</span> - <span id="showingEnd">10</span> de <span id="totalCount">0</span> usuarios
         </div>
-        <div class="flex gap-2" id="pagination"></div>
+
+        <div class="users-table-wrap">
+            <table class="data-table userTable" id="userTable">
+                <thead>
+                    <tr>
+                        <th>Nombre Completo</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if usuarios %}
+                        {% for usuario in usuarios %}
+                        <tr class="user-row"
+                            data-nombre="{{ usuario.nombre or 'N/A' }} {{ usuario.apellido_paterno or '' }} {{ usuario.apellido_materno or '' }} {{ usuario.username or '' }} {{ usuario.correo or '' }}"
+                            data-rol="{% if usuario.rol_nombre %}{{ usuario.rol_nombre.lower() }}{% else %}sin rol{% endif %}"
+                            data-estado="{% if usuario.estado_bool %}active{% else %}inactive{% endif %}">
+                            <td>
+                                <div class="user-identity">
+                                    <div class="user-avatar">{{ (usuario.nombre[0] if usuario.nombre else 'U') | upper }}</div>
+                                    <div>
+                                        <div class="user-name">{{ usuario.nombre }} {{ usuario.apellido_paterno or '' }} {{ usuario.apellido_materno or '' }}</div>
+                                        <div class="user-meta">@{{ usuario.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="role-chip
+                                    {% if usuario.rol_nombre == 'Administrador' %} role-admin
+                                    {% elif usuario.rol_nombre == 'Cajero' %} role-cajero
+                                    {% elif usuario.rol_nombre == 'Cocinero' %} role-cocinero
+                                    {% else %} role-default{% endif %}">
+                                    {{ usuario.rol_nombre or 'Sin rol' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="state-chip {% if usuario.estado_bool %}state-active{% else %}state-inactive{% endif %}">
+                                    <span class="state-dot"></span>
+                                    {{ usuario.estado_display if usuario.estado_display is defined else ('Activo' if usuario.estado_bool else 'Inactivo') }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="users-actions">
+                                    <a href="{{ url_for('usuarios.editar', id_usuario=usuario.id_usuario) }}" class="btn-edit" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{{ url_for('usuarios.detalles', id_usuario=usuario.id_usuario) }}" class="btn-view" title="Ver detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if usuario.estado_bool %}
+                                    <button onclick="desactivarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre }}')" class="btn-delete" title="Desactivar">
+                                        <i class="bi bi-ban"></i>
+                                    </button>
+                                    {% else %}
+                                    <button onclick="activarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre }}')" class="btn-activate" title="Activar">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="users-empty">
+                                <i class="bi bi-people"></i>
+                                <p>No hay usuarios registrados</p>
+                                <a href="{{ url_for('usuarios.crear') }}" class="crear-btn">Crear primer usuario</a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="users-summary">
+            Mostrando <span id="totalCount">{{ usuarios|length }}</span> usuarios
+        </div>
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block scripts %} 

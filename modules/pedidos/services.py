@@ -4,11 +4,104 @@ from sqlalchemy import text
 from datetime import datetime, timedelta
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash
+from utils.schema_guard import asegurar_columnas
+from utils.caja_movimientos import registrar_ingreso_caja
 import uuid
 import re
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _asegurar_meta_pago_pedido(pedido, id_usuario, metodo_pago=None, datos_tarjeta=None):
+    metodo = (metodo_pago or '').strip()
+    if metodo not in ('Efectivo', 'Tarjeta', 'Transferencia'):
+        metodo = 'Efectivo'
+
+    tarjeta_titular = None
+    tarjeta_ultimos4 = None
+    tarjeta_vencimiento = None
+
+    if metodo == 'Tarjeta':
+        datos_tarjeta = datos_tarjeta or {}
+        numero_tarjeta = datos_tarjeta.get('numero_tarjeta')
+        titular_tarjeta = datos_tarjeta.get('titular_tarjeta')
+        vencimiento_tarjeta = datos_tarjeta.get('vencimiento_tarjeta')
+        cvv_tarjeta = datos_tarjeta.get('cvv_tarjeta')
+
+        valido, error = _validar_datos_tarjeta(
+            numero_tarjeta,
+            titular_tarjeta,
+            vencimiento_tarjeta,
+            cvv_tarjeta,
+        )
+        if not valido:
+            return False, error
+
+        numero_limpio = re.sub(r'\s+', '', (numero_tarjeta or '').strip())
+        tarjeta_titular = (titular_tarjeta or '').strip()
+        tarjeta_ultimos4 = numero_limpio[-4:] if len(numero_limpio) >= 4 else None
+        tarjeta_vencimiento = (vencimiento_tarjeta or '').strip()
+
+    meta = PedidoMeta.query.get(pedido.id_pedido)
+    if not meta:
+        meta = PedidoMeta(
+            id_pedido=pedido.id_pedido,
+            metodo_pago=metodo,
+            id_usuario=id_usuario,
+        )
+        db.session.add(meta)
+    else:
+        if not (meta.metodo_pago or '').strip():
+            meta.metodo_pago = metodo
+        elif metodo_pago and metodo in ('Efectivo', 'Tarjeta', 'Transferencia'):
+            meta.metodo_pago = metodo
+
+        meta.id_usuario = id_usuario
+
+    if metodo == 'Tarjeta':
+        meta.tarjeta_titular = tarjeta_titular
+        meta.tarjeta_ultimos4 = tarjeta_ultimos4
+        meta.tarjeta_vencimiento = tarjeta_vencimiento
+    else:
+        meta.tarjeta_titular = None
+        meta.tarjeta_ultimos4 = None
+        meta.tarjeta_vencimiento = None
+
+    return True, None
+
+
+def _parse_fecha_necesaria(fecha_necesaria):
+    valor = (fecha_necesaria or '').strip()
+    if not valor:
+        return None, 'Debes indicar fecha y hora requerida para producción'
+
+    formatos = ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%d')
+    fecha_dt = None
+    for fmt in formatos:
+        try:
+            fecha_dt = datetime.strptime(valor, fmt)
+            break
+        except ValueError:
+            continue
+
+    if not fecha_dt:
+        return None, 'Fecha y hora de producción inválida'
+
+    if fecha_dt.date() < datetime.now().date():
+        return None, 'La fecha requerida no puede ser menor a hoy'
+
+    return fecha_dt, None
+
+
+def _asegurar_esquema_pedidos():
+    asegurar_columnas(
+        'detalle_pedido',
+        [
+            ('atendido', 'BOOLEAN NOT NULL DEFAULT 0'),
+            ('en_produccion', 'BOOLEAN NOT NULL DEFAULT 0'),
+        ],
+    )
 
 
 def _validar_datos_tarjeta(numero, titular, vencimiento, cvv):
@@ -89,8 +182,9 @@ def _obtener_o_crear_cliente_sucursal():
     return cliente, None
 
 
-def crear_pedido_manual(id_cliente, productos, metodo_pago, id_usuario, datos_tarjeta=None):
+def crear_pedido_manual(id_cliente, productos, metodo_pago, id_usuario, datos_tarjeta=None, fecha_necesaria=None):
     try:
+        _asegurar_esquema_pedidos()
         if not id_cliente:
             cliente_sucursal, error_cliente = _obtener_o_crear_cliente_sucursal()
             if error_cliente:
@@ -99,28 +193,6 @@ def crear_pedido_manual(id_cliente, productos, metodo_pago, id_usuario, datos_ta
 
         if not productos:
             return False, "Debes agregar al menos un producto"
-
-        if metodo_pago not in ('Efectivo', 'Tarjeta', 'Transferencia'):
-            return False, "Selecciona un método de pago válido"
-
-        tarjeta_titular = None
-        tarjeta_ultimos4 = None
-        tarjeta_vencimiento = None
-        if metodo_pago == 'Tarjeta':
-            datos_tarjeta = datos_tarjeta or {}
-            valido, error = _validar_datos_tarjeta(
-                datos_tarjeta.get('numero_tarjeta'),
-                datos_tarjeta.get('titular_tarjeta'),
-                datos_tarjeta.get('vencimiento_tarjeta'),
-                datos_tarjeta.get('cvv_tarjeta')
-            )
-            if not valido:
-                return False, error
-
-            numero_limpio = re.sub(r'\s+', '', (datos_tarjeta.get('numero_tarjeta') or '').strip())
-            tarjeta_titular = (datos_tarjeta.get('titular_tarjeta') or '').strip()
-            tarjeta_ultimos4 = numero_limpio[-4:] if len(numero_limpio) >= 4 else None
-            tarjeta_vencimiento = (datos_tarjeta.get('vencimiento_tarjeta') or '').strip()
 
         detalles = []
         total = 0
@@ -154,12 +226,32 @@ def crear_pedido_manual(id_cliente, productos, metodo_pago, id_usuario, datos_ta
                 'subtotal': subtotal
             })
 
+        requeridos_por_producto = {}
+        for d in detalles:
+            requeridos_por_producto[d['id_producto']] = requeridos_por_producto.get(d['id_producto'], 0) + d['cantidad']
+
+        faltantes = {}
+        for id_producto, cantidad_total in requeridos_por_producto.items():
+            producto = Producto.query.get(id_producto)
+            stock_actual = int(producto.stock_actual or 0)
+            if stock_actual < cantidad_total:
+                faltantes[id_producto] = cantidad_total - stock_actual
+
+        requiere_produccion = bool(faltantes)
+
+        fecha_necesaria_dt = None
+        if requiere_produccion:
+            fecha_necesaria_dt, error_fecha = _parse_fecha_necesaria(fecha_necesaria)
+            if error_fecha:
+                return False, error_fecha
+
         pedido = Pedido(
             id_cliente=int(id_cliente),
             total=total,
             fecha=datetime.utcnow(),
             fecha_entrega=None,
-            estado='Pendiente'
+            estado='En Proceso' if requiere_produccion else 'Pendiente',
+            requiere_produccion=requiere_produccion,
         )
 
         db.session.add(pedido)
@@ -170,22 +262,33 @@ def crear_pedido_manual(id_cliente, productos, metodo_pago, id_usuario, datos_ta
                 id_pedido=pedido.id_pedido,
                 id_producto=d['id_producto'],
                 cantidad=d['cantidad'],
-                subtotal=d['subtotal']
+                subtotal=d['subtotal'],
+                en_produccion=d['id_producto'] in faltantes,
             ))
 
-            meta = PedidoMeta.query.get(pedido.id_pedido)
-            if not meta:
-                meta = PedidoMeta(id_pedido=pedido.id_pedido)
-                db.session.add(meta)
+        if requiere_produccion:
+            produccion = Produccion(
+                fecha_solicitud=datetime.now(),
+                estado='Solicitada',
+                fecha_necesaria=fecha_necesaria_dt,
+                id_usuario=id_usuario,
+                id_pedido=pedido.id_pedido,
+            )
+            db.session.add(produccion)
+            db.session.flush()
 
-            meta.metodo_pago = metodo_pago
-            meta.tarjeta_titular = tarjeta_titular
-            meta.tarjeta_ultimos4 = tarjeta_ultimos4
-            meta.tarjeta_vencimiento = tarjeta_vencimiento
-            meta.id_usuario = id_usuario
+            for id_producto, cantidad_faltante in faltantes.items():
+                db.session.add(DetalleProduccion(
+                    id_produccion=produccion.id_produccion,
+                    id_producto=id_producto,
+                    id_materia=None,
+                    cantidad=float(cantidad_faltante),
+                ))
 
         db.session.commit()
-        return True, "Pedido creado correctamente"
+        if requiere_produccion:
+            return True, 'Pedido creado y enviado directamente a producción'
+        return True, 'Pedido creado correctamente'
 
     except Exception as e:
         db.session.rollback()
@@ -194,6 +297,7 @@ def crear_pedido_manual(id_cliente, productos, metodo_pago, id_usuario, datos_ta
 
 def obtener_pedidos():
     try:
+        _asegurar_esquema_pedidos()
         result = db.session.execute(text("""
     SELECT
         p.id_pedido,
@@ -205,7 +309,9 @@ def obtener_pedidos():
         ru.username AS usuario_responsable,
         pr.nombre AS nombre_producto,
         pr.stock_actual,
-        d.cantidad
+        d.cantidad,
+        d.atendido,
+        d.en_produccion
     FROM pedidos p
     LEFT JOIN clientes c ON c.id_cliente = p.id_cliente
     LEFT JOIN personas pe ON pe.id_persona = c.id_persona
@@ -213,7 +319,7 @@ def obtener_pedidos():
     LEFT JOIN usuarios ru ON ru.id_usuario = pm.id_usuario
     JOIN detalle_pedido d ON p.id_pedido = d.id_pedido
     JOIN productos pr ON d.id_producto = pr.id_producto
-    WHERE p.estado IN ('Pendiente', 'En Proceso', 'Completado', 'Producido')
+    WHERE p.estado IN ('Pendiente', 'En Proceso', 'Completado', 'Producido', 'Pagado')
     ORDER BY p.fecha ASC
 """))
 
@@ -225,11 +331,15 @@ def obtener_pedidos():
             # Si el pedido no existe, lo creamos
             if id_pedido not in pedidos_dict:
                 es_sucursal = (row['cliente_nombre'] or '').strip().lower() == 'venta en sucursal'
+                estado_row = row['estado'] or 'Pendiente'
+                estado_row_lower = str(estado_row).strip().lower()
                 pedidos_dict[id_pedido] = {
                     'id_pedido': id_pedido,
                     'fecha': row['fecha'],
                     'fecha_entrega': row['fecha_entrega'],
-                    'estado': row['estado'],
+                    'estado': estado_row,
+                    'estado_pago': 'Pagado' if estado_row_lower == 'pagado' else 'Pendiente de pago',
+                    'estado_mostrado': 'Pagado' if estado_row_lower == 'pagado' else estado_row,
                     'tipo_venta': 'sucursal' if es_sucursal else 'en_linea',
                     'metodo_pago': row['metodo_pago'] or 'N/D',
                     'usuario_responsable': row['usuario_responsable'] or 'N/D',
@@ -244,10 +354,38 @@ def obtener_pedidos():
             pedidos_dict[id_pedido]['productos'].append({
                 'nombre': row['nombre_producto'],
                 'stock_actual': row['stock_actual'],
-                'cantidad': row['cantidad']
+                'cantidad': row['cantidad'],
+                'atendido': bool(row['atendido']),
+                'en_produccion': bool(row['en_produccion']),
             })
 
         pedidos = list(pedidos_dict.values())
+
+        for pedido in pedidos:
+            estado = (pedido.get('estado') or '').strip().lower()
+            pedido_pagado = estado == 'pagado'
+            pedido['estado_pago'] = 'Pagado' if pedido_pagado else 'Pendiente de pago'
+            pedido['estado_mostrado'] = 'Pagado' if pedido_pagado else pedido.get('estado')
+            total_productos = len(pedido.get('productos') or [])
+            productos_cubiertos = sum(
+                1 for p in pedido.get('productos') or []
+                if p.get('atendido') or p.get('en_produccion')
+            )
+            avance_lineas = round((productos_cubiertos / total_productos) * 100, 2) if total_productos > 0 else 0
+
+            if estado in ('completado', 'pagado'):
+                progreso = 100
+            elif estado == 'producido':
+                progreso = 90
+            elif estado == 'en proceso':
+                progreso = max(60, int(avance_lineas))
+            elif estado == 'pendiente':
+                progreso = max(25, min(55, int(avance_lineas)))
+            else:
+                progreso = int(avance_lineas)
+
+            pedido['progreso'] = progreso
+            pedido['avance_lineas'] = avance_lineas
 
         return pedidos, None
 
@@ -257,6 +395,7 @@ def obtener_pedidos():
     
 def obtener_pedido(id_cliente):
     try:
+        _asegurar_esquema_pedidos()
         logger.info(f"Obteniendo pedidos para cliente: {id_cliente}")
         
         if not id_cliente:
@@ -267,22 +406,50 @@ def obtener_pedido(id_cliente):
         
         resultado = []
         for p in pedidos:
+            # Calcular total real sumando subtotales de los detalles
+            detalles = p.detalles or []
+            total_real = sum(float(getattr(d, 'subtotal', 0) or 0) for d in detalles)
             fecha_estimada = p.fecha + timedelta(days=3) if p.fecha else None
-            
+            fecha_requerida = p.fecha_entrega or None
+            total_detalles = len(detalles)
+            cubiertos = sum(1 for d in detalles if getattr(d, 'atendido', False) or getattr(d, 'en_produccion', False))
+            avance_lineas = round((cubiertos / total_detalles) * 100, 2) if total_detalles > 0 else 0
+
+            estado = (p.estado or '').strip().lower()
+            pago_capturado = estado == 'pagado'
+            if estado in ('completado', 'pagado'):
+                progreso = 100
+            elif estado == 'producido':
+                progreso = 90
+            elif estado == 'en proceso':
+                # Nunca mostrar 100% en proceso, máximo 95
+                progreso = min(95, max(60, int(avance_lineas)))
+            elif estado == 'pendiente':
+                progreso = max(25, min(55, int(avance_lineas)))
+            elif estado == 'cancelado':
+                progreso = 0
+            else:
+                progreso = int(avance_lineas)
+
             resultado.append({
                 'id': p.id_pedido,
                 'fecha': p.fecha,
                 'fecha_estimada': fecha_estimada,
                 'fecha_entrega': p.fecha_entrega,
-                'total': p.total,
+                'fecha_requerida': fecha_requerida,
+                'total': total_real,
                 'requiere_produccion': p.requiere_produccion,
                 'estado': p.estado,
+                'estado_pago': 'Pagado' if pago_capturado else 'Pendiente de pago',
+                'estado_mostrado': 'Pagado' if pago_capturado else p.estado,
                 'metodo_pago': p.meta_pedido.metodo_pago if p.meta_pedido else 'N/D',
                 'usuario_responsable': p.meta_pedido.usuario.username if p.meta_pedido and p.meta_pedido.usuario else 'N/D',
+                'progreso': progreso,
                 # Pre-format the dates for the template (safest approach)
                 'fecha_str': p.fecha.strftime('%d/%m/%Y') if p.fecha else '',
                 'fecha_entrega_str': p.fecha_entrega.strftime('%d/%m/%Y') if p.fecha_entrega else '',
-                'fecha_estimada_str': fecha_estimada.strftime('%d/%m/%Y') if fecha_estimada else ''
+                'fecha_estimada_str': fecha_estimada.strftime('%d/%m/%Y') if fecha_estimada else '',
+                'fecha_requerida_str': fecha_requerida.strftime('%d/%m/%Y %H:%M') if fecha_requerida else ''
             })
         
         logger.info(f"Pedidos obtenidos: {len(resultado)} para cliente: {id_cliente}")
@@ -294,6 +461,7 @@ def obtener_pedido(id_cliente):
     
 def obtener_detalles_pedido(id_pedido):
     try:
+        _asegurar_esquema_pedidos()
         logger.info(f"Obteniendo detalles para pedido: {id_pedido}")
         detalles = DetallePedido.query.filter_by(id_pedido=id_pedido).all()
         resultado = []
@@ -312,18 +480,36 @@ def obtener_detalles_pedido(id_pedido):
         
 def completar_pedido(id_pedido):
     try:
+        _asegurar_esquema_pedidos()
         pedido = Pedido.query.get(id_pedido)
         if not pedido:
             return False, "Pedido no encontrado"
-        
-        producto = Producto.query.get(pedido.detalles[0].id_producto) if pedido.detalles else None
-        if producto and producto.stock_actual < pedido.detalles[0].cantidad:
-            return False, f"Stock insuficiente para el producto '{producto.nombre}'"
-        
+
+        for detalle in pedido.detalles:
+            if getattr(detalle, 'atendido', False):
+                continue
+
+            producto = detalle.producto
+            if not producto:
+                continue
+            stock_requerido = float(detalle.cantidad or 0)
+            if float(producto.stock_actual or 0) < stock_requerido:
+                return False, f"Stock insuficiente para el producto '{producto.nombre}'"
+
+        for detalle in pedido.detalles:
+            if getattr(detalle, 'atendido', False):
+                continue
+
+            producto = detalle.producto
+            if not producto:
+                continue
+            producto.stock_actual -= float(detalle.cantidad or 0)
+            detalle.atendido = True
+            detalle.en_produccion = False
+
         pedido.estado = "Completado"
         pedido.fecha_entrega = datetime.now()
-        if producto:
-            producto.stock_actual -= pedido.detalles[0].cantidad
+        pedido.requiere_produccion = False
 
         db.session.commit()
         return True, "Pedido completado"
@@ -352,7 +538,7 @@ def cancelar_pedido(id_pedido):
         pedido.estado = "Cancelado"
         
         db.session.commit()
-        return True, "Pedido cancelado"
+        return True, "Pedido cancelado con éxito"
     except Exception as e:
         db.session.rollback()
         return False, str(e)
@@ -370,9 +556,6 @@ def editar_pedido_propio(id_pedido, id_cliente, productos, metodo_pago, id_usuar
 
         if pedido.estado != 'Pendiente':
             return False, "Solo puedes editar pedidos pendientes"
-
-        if metodo_pago not in ('Efectivo', 'Tarjeta', 'Transferencia'):
-            return False, "Selecciona un método de pago válido"
 
         detalles = []
         total = 0
@@ -419,14 +602,6 @@ def editar_pedido_propio(id_pedido, id_cliente, productos, metodo_pago, id_usuar
                 subtotal=d['subtotal']
             ))
 
-        meta = PedidoMeta.query.get(pedido.id_pedido)
-        if not meta:
-            meta = PedidoMeta(id_pedido=pedido.id_pedido, metodo_pago=metodo_pago, id_usuario=id_usuario)
-            db.session.add(meta)
-        else:
-            meta.metodo_pago = metodo_pago
-            meta.id_usuario = id_usuario
-
         pedido.total = total
         db.session.commit()
 
@@ -437,8 +612,9 @@ def editar_pedido_propio(id_pedido, id_cliente, productos, metodo_pago, id_usuar
         logger.error(f"Error al editar pedido propio: {str(e)}")
         return False, str(e)
 
-def completar_o_producir(id_pedido, id_usuario, fecha_necesaria=None):
+def completar_o_producir(id_pedido, id_usuario, fecha_necesaria=None, metodo_pago=None, datos_tarjeta=None):
     try:
+        _asegurar_esquema_pedidos()
         pedido = Pedido.query.get(id_pedido)
 
         if not pedido:
@@ -450,65 +626,84 @@ def completar_o_producir(id_pedido, id_usuario, fecha_necesaria=None):
             if not producto:
                 continue
 
+            if getattr(detalle, 'atendido', False):
+                continue
+
             item = requerimientos_por_producto.setdefault(
                 producto.id_producto,
                 {
                     "producto": producto,
                     "cantidad_pedida": 0.0,
+                    "stock_requerido": 0.0,
                     "stock_actual": float(producto.stock_actual or 0),
                 }
             )
-            item["cantidad_pedida"] += float(detalle.cantidad)
+            cantidad_detalle = float(detalle.cantidad or 0)
+            item["cantidad_pedida"] += cantidad_detalle
+            item["stock_requerido"] += cantidad_detalle
 
         faltantes_por_producto = {}
         for id_producto, item in requerimientos_por_producto.items():
-            faltante = round(max(0.0, item["cantidad_pedida"] - item["stock_actual"]), 2)
-            if faltante > 0:
+            faltante_stock = round(max(0.0, item["stock_requerido"] - item["stock_actual"]), 6)
+            if faltante_stock > 0:
+                faltante_produccion = round(faltante_stock, 6)
                 faltantes_por_producto[id_producto] = {
                     "producto": item["producto"],
-                    "faltante": faltante,
+                    "faltante": faltante_produccion,
+                    "faltante_stock": faltante_stock,
                     "cantidad_pedida": item["cantidad_pedida"],
+                    "stock_requerido": item["stock_requerido"],
                     "stock_actual": item["stock_actual"],
                 }
 
         necesita_produccion = len(faltantes_por_producto) > 0
 
-        # 🟢 CASO 1: NO necesita producción
         if not necesita_produccion:
             for item in requerimientos_por_producto.values():
                 producto = item["producto"]
-                producto.stock_actual -= item["cantidad_pedida"]
+                producto.stock_actual -= item["stock_requerido"]
+            for detalle in pedido.detalles:
+                if getattr(detalle, 'atendido', False):
+                    continue
+                detalle.atendido = True
+                detalle.en_produccion = False
 
             pedido.estado = "Completado"
             pedido.fecha_entrega = datetime.now()
-            pedido.requiere_produccion = False  # 🔥 CLAVE
+            pedido.requiere_produccion = False
 
             db.session.commit()
 
             return True, "Pedido completado sin producción"
 
-        # 🔴 CASO 2: SÍ necesita producción
+        if not fecha_necesaria and pedido.fecha_entrega:
+            fecha_necesaria = pedido.fecha_entrega.strftime('%Y-%m-%d %H:%M')
+
         if not fecha_necesaria:
             return False, "Debes indicar la fecha en que se necesita la producción"
 
-        try:
-            fecha_necesaria_dt = datetime.strptime(fecha_necesaria, '%Y-%m-%d')
-        except ValueError:
-            return False, "Fecha de producción inválida"
+        fecha_necesaria_dt, error_fecha = _parse_fecha_necesaria(fecha_necesaria)
+        if error_fecha:
+            return False, error_fecha
 
-        if fecha_necesaria_dt.date() < datetime.now().date():
-            return False, "La fecha necesaria no puede ser menor a hoy"
-
-        produccion = Produccion(
-            fecha_solicitud=datetime.now(),
-            estado="Solicitada",
-            fecha_necesaria=fecha_necesaria_dt,
-            id_usuario=id_usuario,
-            id_pedido=id_pedido
-        )
-
-        db.session.add(produccion)
-        db.session.flush()
+        produccion = pedido.produccion
+        if not produccion:
+            produccion = Produccion(
+                fecha_solicitud=datetime.now(),
+                estado="Solicitada",
+                fecha_necesaria=fecha_necesaria_dt,
+                id_usuario=id_usuario,
+                id_pedido=id_pedido
+            )
+            db.session.add(produccion)
+            db.session.flush()
+        else:
+            produccion.fecha_necesaria = fecha_necesaria_dt
+            produccion.id_usuario = id_usuario
+            if not produccion.fecha_solicitud:
+                produccion.fecha_solicitud = datetime.now()
+            if not produccion.estado or produccion.estado == 'Completada':
+                produccion.estado = 'Solicitada'
 
         for item in faltantes_por_producto.values():
             db.session.add(DetalleProduccion(
@@ -518,8 +713,24 @@ def completar_o_producir(id_pedido, id_usuario, fecha_necesaria=None):
                 cantidad=item["faltante"]
             ))
 
+        for detalle in pedido.detalles:
+            if getattr(detalle, 'atendido', False):
+                continue
+
+            producto = detalle.producto
+            if not producto:
+                continue
+
+            stock_requerido = float(detalle.cantidad or 0)
+            if float(producto.stock_actual or 0) >= stock_requerido:
+                producto.stock_actual -= stock_requerido
+                detalle.atendido = True
+                detalle.en_produccion = False
+            else:
+                detalle.en_produccion = True
+
         pedido.estado = "En Proceso"
-        pedido.requiere_produccion = True  # 🔥 CLAVE
+        pedido.requiere_produccion = True
 
         db.session.commit()
 
@@ -527,4 +738,123 @@ def completar_o_producir(id_pedido, id_usuario, fecha_necesaria=None):
 
     except Exception as e:
         db.session.rollback()
+        return False, str(e)
+
+
+def procesar_detalle_pedido(id_pedido, id_detalle, id_usuario, enviar_a_produccion=False, fecha_necesaria=None, metodo_pago=None, datos_tarjeta=None):
+    try:
+        _asegurar_esquema_pedidos()
+
+        pedido = Pedido.query.get(id_pedido)
+        if not pedido:
+            return False, "Pedido no encontrado"
+
+        detalle = DetallePedido.query.get(id_detalle)
+        if not detalle or detalle.id_pedido != pedido.id_pedido:
+            return False, "La línea no pertenece a este pedido"
+
+        if getattr(detalle, 'atendido', False):
+            return True, "La línea ya fue entregada"
+
+        producto = detalle.producto
+        if not producto:
+            return False, "Producto no encontrado"
+
+        if enviar_a_produccion:
+            if getattr(detalle, 'en_produccion', False):
+                return True, "La línea ya está en producción"
+
+            produccion = pedido.produccion
+            if not produccion:
+                fecha_necesaria_valor = fecha_necesaria
+                if not fecha_necesaria_valor and pedido.fecha_entrega:
+                    fecha_necesaria_valor = pedido.fecha_entrega.strftime('%Y-%m-%d %H:%M')
+
+                fecha_necesaria_dt, error_fecha = _parse_fecha_necesaria(fecha_necesaria_valor)
+                if error_fecha:
+                    return False, error_fecha
+
+                produccion = Produccion(
+                    fecha_solicitud=datetime.now(),
+                    estado="Solicitada",
+                    fecha_necesaria=fecha_necesaria_dt,
+                    id_usuario=id_usuario,
+                    id_pedido=id_pedido
+                )
+                db.session.add(produccion)
+                db.session.flush()
+
+            db.session.add(DetalleProduccion(
+                id_produccion=produccion.id_produccion,
+                id_producto=producto.id_producto,
+                id_materia=None,
+                cantidad=detalle.cantidad,
+            ))
+
+            detalle.en_produccion = True
+            pedido.estado = 'En Proceso'
+            pedido.requiere_produccion = True
+            db.session.commit()
+            return True, f"La línea de {producto.nombre} fue enviada a producción"
+
+        stock_requerido = float(detalle.cantidad or 0)
+        if float(producto.stock_actual or 0) < stock_requerido:
+            return False, f"Stock insuficiente para '{producto.nombre}'. Envía la línea a producción"
+
+        producto.stock_actual -= stock_requerido
+        detalle.atendido = True
+        detalle.en_produccion = False
+
+        if all(getattr(item, 'atendido', False) for item in pedido.detalles):
+            pedido.estado = 'Completado'
+            pedido.fecha_entrega = datetime.now()
+            pedido.requiere_produccion = False
+        else:
+            pedido.estado = 'En Proceso'
+
+        db.session.commit()
+        return True, f"La línea de {producto.nombre} fue entregada"
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al procesar detalle del pedido: {str(e)}")
+        return False, str(e)
+
+
+def pagar_pedido(id_pedido, id_usuario, metodo_pago, datos_tarjeta=None):
+    try:
+        _asegurar_esquema_pedidos()
+        pedido = Pedido.query.get(id_pedido)
+        if not pedido:
+            return False, 'Pedido no encontrado'
+
+        if (pedido.estado or '').strip().lower() != 'completado':
+            return False, 'Solo se puede pagar un pedido completado'
+
+        ok_pago, err_pago = _asegurar_meta_pago_pedido(
+            pedido,
+            id_usuario,
+            metodo_pago=metodo_pago,
+            datos_tarjeta=datos_tarjeta,
+        )
+        if not ok_pago:
+            return False, err_pago
+
+        pedido.estado = 'Pagado'
+
+        ok_caja, err_caja = registrar_ingreso_caja(
+            pedido.total,
+            f'Pedido #{pedido.id_pedido}',
+            fecha=datetime.now(),
+        )
+        if not ok_caja:
+            db.session.rollback()
+            return False, err_caja or 'No se pudo registrar el pago en caja'
+
+        db.session.commit()
+        return True, 'Pago registrado correctamente'
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error al pagar pedido: {str(e)}')
         return False, str(e)

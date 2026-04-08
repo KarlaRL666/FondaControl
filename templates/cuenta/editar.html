@@ -7,10 +7,34 @@
 
 {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style/pages/usuarios.css') }}">
+    <style>
+        .account-shell { max-width: 980px; margin: 0 auto; }
+        .account-hero {
+            background: linear-gradient(140deg, #6B5344 0%, #8B7355 60%, #FF9800 100%);
+            color: #fff;
+            border-radius: 16px;
+            padding: 1.15rem 1.3rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 14px 28px rgba(56, 37, 85, 0.24);
+        }
+        .account-edit-card {
+            background: #fff;
+            border: 1px solid #e5def1;
+            border-radius: 16px;
+            box-shadow: 0 12px 24px rgba(28, 24, 41, 0.08);
+            padding: 1rem;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div class="form-page">
+<div class="account-shell mt-3">
+    <section class="account-hero">
+        <h1 class="h3 mb-1">Editar mi cuenta</h1>
+        <p class="mb-0">Actualiza tus datos personales y de acceso.</p>
+    </section>
+
+    <div class="account-edit-card">
     <div class="form-container">
         <div class="form-title">
         <h1>Editar mi cuenta</h1>

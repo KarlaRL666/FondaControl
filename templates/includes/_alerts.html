@@ -1,16 +1,97 @@
-<!-- Contenedor de alertas flotantes -->
-<div id="alerts-container" class="alerts-container position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+<style>
+    #alerts-container {
+        left: 50%;
+        transform: translateX(-50%);
+        top: 0.65rem;
+        width: min(92vw, 640px);
+        z-index: 2000;
+        pointer-events: none;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    @keyframes alertBounce {
+        0% {
+            opacity: 0;
+            transform: scale(0.92);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    #alerts-container .alert {
+        display: block;
+        padding: 0.8rem 1rem;
+        text-align: center;
+        margin-bottom: 0.6rem;
+        pointer-events: auto;
+        border: none;
+        border-radius: 12px !important;
+        backdrop-filter: blur(8px);
+        animation: alertBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        font-weight: 500;
+        letter-spacing: -0.3px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    #alerts-container .alert-success {
+        background: linear-gradient(135deg, rgba(190, 120, 16, 0.95) 0%, rgba(139, 115, 85, 0.92) 100%) !important;
+        color: #fff;
+    }
+
+    #alerts-container .alert-danger,
+    #alerts-container .alert-error {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.95) 0%, rgba(200, 40, 55, 0.92) 100%) !important;
+        color: #fff;
+    }
+
+    #alerts-container .alert-warning {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.95) 0%, rgba(251, 192, 45, 0.92) 100%) !important;
+        color: #1a1a1a;
+    }
+
+    #alerts-container .alert-info {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.95) 0%, rgba(0, 148, 211, 0.92) 100%) !important;
+        color: #fff;
+    }
+
+    #alerts-container .btn-close {
+        opacity: 0.7;
+        filter: brightness(1.2);
+    }
+
+    #alerts-container .btn-close:hover {
+        opacity: 1;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+    }
+</style>
+
+<div id="alerts-container" class="alerts-container position-fixed p-3" aria-live="polite" aria-atomic="true">
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, msg in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-lg rounded-3 mb-2" 
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-lg rounded-3 mb-2"
              role="alert"
-             data-bs-autohide="true">
+             data-category="{{ category }}"
+               data-message="{{ msg|e }}">
             {{ msg }}
-            <button type="button" 
-                    class="btn-close" 
-                    data-bs-dismiss="alert" 
-                    aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endfor %}
     {% endif %}

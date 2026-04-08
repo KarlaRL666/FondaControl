@@ -1,33 +1,45 @@
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top app-top-navbar" style="background: linear-gradient(135deg, #1a1a2e, #16213e);
+;  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); border-radius: 0.75rem; backdrop-filter: blur(6px);">
     <div class="container-fluid px-4">
-
-        <!-- LOGO -->
-        <a class="navbar-brand d-flex align-items-center gap-2"
-           href="{{ url_for('dashboard.index') if current_user.is_authenticated else '#' }}">
-            <img class="brand-logo"
-                 src="{{ url_for('static', filename='imagen/logoFonda.jpg') }}">
-            <span class="brand-text">Casa Gourmet</span>
+        <!-- Brand/Logo -->
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold"
+            href="{{ url_for('auth.redirigir') if current_user.is_authenticated else url_for('tienda.index') }}"
+            title="Ir al inicio">
+            <img class="brand-logo rounded-circle"
+                 src="{{ url_for('static', filename='imagen/logoFonda.jpg') }}"
+                 alt="Casa Gourmet Logo"
+                 style="width: 40px; height: 40px; object-fit: cover;">
+            <span class="brand-text d-none d-md-inline">Casa Gourmet</span>
         </a>
 
-    <button id="mobileMenuToggle" class="navbar-toggler" type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarMenu"
-        aria-controls="navbarMenu"
-        aria-expanded="false"
-        aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-</button>
-        {% if current_user.is_authenticated %}
-            <div id="alertsDropdown" class="dropdown me-3">
-                <a id="alertsBellButton" class="btn btn-outline-light position-relative" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
-                    <i class="bi bi-bell"></i>
-                    {% if alertas_stock_total and alertas_stock_total > 0 %}
-                        <span id="alertsCountBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ alertas_stock_total }}
-                        </span>
-                    {% endif %}
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" style="min-width: 320px;">
+        <!-- Mobile Toggle -->
+        <button id="navbarMenuToggle" class="navbar-toggler border-0" type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarMenu"
+            aria-controls="navbarMenu"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
+            <i class="bi bi-list"></i>
+        </button>
+        
+        <!-- Menu Items -->
+        <div class="collapse navbar-collapse justify-content-end" id="navbarMenu">
+            <ul class="navbar-nav gap-lg-3 align-items-lg-center ms-3 ms-lg-0">
+
+                {% if current_user.is_authenticated %}
+                {% set persona = current_user.empleado.persona if current_user.empleado and current_user.empleado.persona else (current_user.cliente.persona if current_user.cliente and current_user.cliente.persona else None) %}
+                {% set nombre_completo = (persona.nombre ~ ' ' ~ persona.apellido_p ~ (' ' ~ persona.apellido_m if persona.apellido_m else '')) if persona else current_user.username %}
+
+                <li class="nav-item dropdown" id="alertsDropdown">
+                    <a id="alertsBellButton" class="btn btn-outline-light position-relative" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" title="Alertas">
+                        <i class="bi bi-bell"></i>
+                        {% if alertas_stock_total and alertas_stock_total > 0 %}
+                            <span id="alertsCountBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ alertas_stock_total }}
+                            </span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" style="min-width: 320px;">
                     {% if current_user.id_rol == 4 %}
                         <li class="px-2 pb-2 fw-bold">Actualizaciones de tus pedidos</li>
                         {% if alertas_pedidos_cliente %}
@@ -36,9 +48,9 @@
                                     <a class="dropdown-item text-warning" href="{{ url_for('pedidos.ver_detalles_pedido', id_pedido=alerta.id_pedido) }}">
                                         <i class="bi bi-receipt-cutoff me-2"></i>
                                         Pedido #{{ alerta.id_pedido }}
-                                        <small class="d-block text-muted">Estado actual: {{ alerta.estado }}</small>
+                                        <small class="d-block text-white-50">Estado actual: {{ alerta.estado }}</small>
                                         {% if alerta.fecha %}
-                                            <small class="d-block text-muted">{{ alerta.fecha.strftime('%d/%m/%Y %H:%M') }}</small>
+                                            <small class="d-block text-white-50">{{ alerta.fecha.strftime('%d/%m/%Y %H:%M') }}</small>
                                         {% endif %}
                                     </a>
                                 </li>
@@ -54,9 +66,9 @@
                                     <a class="dropdown-item text-warning" href="{{ url_for('produccion.ver', id=alerta.id_produccion) }}">
                                         <i class="bi bi-bag-check me-2"></i>
                                         Producción #{{ alerta.id_produccion }}
-                                        <small class="d-block text-muted">Estado: {{ alerta.estado }}</small>
+                                        <small class="d-block text-white-50">Estado: {{ alerta.estado }}</small>
                                         {% if alerta.fecha_necesaria %}
-                                            <small class="d-block text-muted">Necesaria: {{ alerta.fecha_necesaria.strftime('%d/%m/%Y') }}</small>
+                                            <small class="d-block text-white-50">Necesaria: {{ alerta.fecha_necesaria.strftime('%d/%m/%Y') }}</small>
                                         {% endif %}
                                     </a>
                                 </li>
@@ -72,7 +84,7 @@
                                     <a class="dropdown-item text-warning" href="{{ url_for('compras.crear_desde_alerta', id_materia=materia.id) }}">
                                         <i class="bi bi-box-seam me-2"></i>
                                         Materia: {{ materia.nombre }}
-                                        <small class="d-block text-muted">Stock {{ materia.stock_actual }} / mínimo {{ materia.stock_minimo }} {{ materia.unidad_medida }}</small>
+                                        <small class="d-block text-white-50">Stock {{ materia.stock_actual }} / mínimo {{ materia.stock_minimo }} {{ materia.unidad_medida }}</small>
                                         {% if materia.compra_solicitada %}
                                             <small class="d-block text-info">Compra ya solicitada</small>
                                         {% endif %}
@@ -87,7 +99,10 @@
                                     <a class="dropdown-item text-warning" href="{{ url_for('produccion.crear_desde_alerta', id_producto=producto.id) }}">
                                         <i class="bi bi-exclamation-triangle me-2"></i>
                                         Producto: {{ producto.nombre }}
-                                        <small class="d-block text-muted">Stock {{ producto.stock_actual }} / mínimo {{ producto.stock_minimo }}</small>
+                                        <small class="d-block text-white-50">Stock {{ producto.stock_actual }} / mínimo {{ producto.stock_minimo }}</small>
+                                        {% if producto.produccion_solicitada %}
+                                            <small class="d-block text-info">Producción ya solicitada</small>
+                                        {% endif %}
                                     </a>
                                 </li>
                             {% endfor %}
@@ -99,95 +114,461 @@
                                     <a class="dropdown-item text-warning" href="{{ url_for('compras.ver', id=alerta.id_compra) }}">
                                         <i class="bi bi-cart-check me-2"></i>
                                         Compra #{{ alerta.id_compra }}
-                                        <small class="d-block text-muted">Estado: {{ alerta.estado }}</small>
-                                        <small class="d-block text-muted">Total: ${{ '%.2f'|format(alerta.total or 0) }}</small>
+                                        <small class="d-block text-white-50">Estado: {{ alerta.estado }}</small>
+                                        <small class="d-block text-white-50">Total: ${{ '%.2f'|format(alerta.total or 0) }}</small>
                                     </a>
                                 </li>
                             {% endfor %}
                         {% else %}
                             <li><span class="dropdown-item-text text-success">Sin alertas de stock ni solicitudes de compra.</span></li>
                         {% endif %}
-                    {% else %}
-                        <li class="px-2 pb-2 fw-bold">Alertas de stock bajo</li>
-                        {% if alertas_materias or alertas_productos %}
+                    {% elif current_user.id_rol == 1 %}
+                        <li class="px-2 pb-2 fw-bold">Urgentes primero</li>
+                        {% if alertas_pedidos_pendientes or alertas_compras_solicitadas or alertas_producciones_solicitadas or alertas_materias or alertas_productos %}
+                            {% for pedido in alertas_pedidos_pendientes %}
+                                <li>
+                                    <a class="dropdown-item text-warning" href="{{ url_for('pedidos.ver_detalles_pedido', id_pedido=pedido.id_pedido) }}">
+                                        <i class="bi bi-receipt-cutoff me-2"></i>
+                                        Pedido pendiente #{{ pedido.id_pedido }}
+                                        <small class="d-block text-white-50">Estado: {{ pedido.estado }}</small>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            {% if alertas_pedidos_pendientes and (alertas_compras_solicitadas or alertas_producciones_solicitadas or alertas_materias or alertas_productos) %}
+                                <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+
+                            {% for alerta in alertas_producciones_solicitadas %}
+                                <li>
+                                    <a class="dropdown-item text-warning" href="{{ url_for('produccion.ver', id=alerta.id_produccion) }}">
+                                        <i class="bi bi-bag-check me-2"></i>
+                                        Producción #{{ alerta.id_produccion }}
+                                        <small class="d-block text-white-50">Estado: {{ alerta.estado }}</small>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            {% if alertas_producciones_solicitadas and (alertas_compras_solicitadas or alertas_materias or alertas_productos) %}
+                                <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+
+                            {% for alerta in alertas_compras_solicitadas %}
+                                <li>
+                                    <a class="dropdown-item text-warning" href="{{ url_for('compras.ver', id=alerta.id_compra) }}">
+                                        <i class="bi bi-cart-check me-2"></i>
+                                        Compra #{{ alerta.id_compra }}
+                                        <small class="d-block text-white-50">Estado: {{ alerta.estado }}</small>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            {% if alertas_compras_solicitadas and (alertas_materias or alertas_productos) %}
+                                <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+
+                            <li class="px-2 pb-1 pt-1 fw-bold text-white-50">Stock bajo</li>
+
                             {% for materia in alertas_materias %}
                                 <li>
                                     <a class="dropdown-item text-warning" href="{{ url_for('compras.crear_desde_alerta', id_materia=materia.id) }}">
                                         <i class="bi bi-exclamation-triangle me-2"></i>
                                         Materia: {{ materia.nombre }}
-                                        <small class="d-block text-muted">Stock {{ materia.stock_actual }} / mínimo {{ materia.stock_minimo }} {{ materia.unidad_medida }}</small>
-                                        {% if materia.compra_solicitada %}
-                                            <small class="d-block text-info">Compra solicitada</small>
-                                        {% endif %}
+                                        <small class="d-block text-white-50">Stock {{ materia.stock_actual }} / mínimo {{ materia.stock_minimo }} {{ materia.unidad_medida }}</small>
                                     </a>
                                 </li>
                             {% endfor %}
+
                             {% for producto in alertas_productos %}
                                 <li>
                                     <a class="dropdown-item text-warning" href="{{ url_for('produccion.crear_desde_alerta', id_producto=producto.id) }}">
                                         <i class="bi bi-exclamation-triangle me-2"></i>
                                         Producto: {{ producto.nombre }}
-                                        <small class="d-block text-muted">Stock {{ producto.stock_actual }} / mínimo {{ producto.stock_minimo }}</small>
+                                        <small class="d-block text-white-50">Stock {{ producto.stock_actual }} / mínimo {{ producto.stock_minimo }}</small>
                                     </a>
                                 </li>
                             {% endfor %}
                         {% else %}
-                            <li><span class="dropdown-item-text text-success">Sin alertas de stock.</span></li>
+                            <li><span class="dropdown-item-text text-success">Sin alertas activas.</span></li>
                         {% endif %}
+                    {% else %}
+                        <li><span class="dropdown-item-text text-success">Sin alertas disponibles para tu rol.</span></li>
                     {% endif %}
-                </ul>
-            </div>
-        {% else %}       
-<div class="collapse navbar-collapse justify-content-end" id="navbarMenu">
-            <ul class="navbar-nav gap-lg-3">
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#inicio">Inicio</a>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button id="clearAlertsAction" type="button" class="dropdown-item text-center text-info">
+                                <i class="bi bi-check2-square me-1"></i> Limpiar notificaciones
+                            </button>
+                        </li>
+                    </ul>
                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('tienda.menu') }}">Menú</a>
+                {% if current_user.id_rol == 4 %}
+                <!-- Ratings Button for Clients -->
+                <li class="nav-item dropdown" id="ratingsDropdown">
+                    <a id="ratingsBellButton" class="btn btn-outline-light position-relative" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" title="Mis calificaciones">
+                        <i class="bi bi-star-fill" style="color: #f8c44f;"></i>
+                        {% if promedio_calificaciones %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size: 0.7rem;">
+                                {{ promedio_calificaciones|round(1) }}
+                            </span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" style="min-width: 300px;">
+                        <li class="px-2 pb-2 fw-bold d-flex align-items-center gap-2">
+                            <i class="bi bi-star-fill" style="color: #f8c44f;"></i>
+                            Mis Calificaciones
+                        </li>
+                        {% if calificaciones_cliente %}
+                            {% for c in calificaciones_cliente[:3] %}
+                                <li>
+                                    <a class="dropdown-item text-white" href="{{ url_for('tienda.index') }}#calificaciones">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span>{{ c.cliente or current_user.username }}</span>
+                                            <span class="badge bg-warning text-dark">{{ c.calificacion }}/5</span>
+                                        </div>
+                                        <small class="text-white-50 d-block">{{ c.fecha }}</small>
+                                        {% if c.comentario %}
+                                        <small class="text-white-70 d-block" style="margin-top: 0.3rem;">{{ c.comentario[:50] }}{% if c.comentario|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            {% if calificaciones_cliente|length > 3 %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-center text-info fw-bold" href="{{ url_for('tienda.index') }}#calificaciones">
+                                        Ver todas las calificaciones ({{ calificaciones_cliente|length }})
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li><span class="dropdown-item-text text-white-50">Aún no tienes calificaciones. ¡Compra y recibe comentarios!</span></li>
+                        {% endif %}
+                    </ul>
                 </li>
+                {% endif %}
 
-                <li class="nav-item">
-                    <a class="nav-link" href="#nosotros">Nosotros</a>
+                {% if mostrar_turno_caja or (current_user.is_authenticated and current_user.id_rol in [1, 3]) %}
+                <li class="nav-item navbar-turno-chip" data-turno-restante="{{ turno_restante_segundos }}">
+                    <span class="turno-chip-label">Turno</span>
+                    <span class="turno-chip-hours">Programado: {{ turno_inicio_txt }} - {{ turno_cierre_txt }}</span>
+                    <span class="turno-chip-real">Inicio real: {{ turno_inicio_real_txt }}</span>
+                    <span class="turno-chip-remaining" id="turnoRestanteTxt">--:--:--</span>
                 </li>
+                {% endif %}
 
-                <li class="nav-item">
-                    <a class="nav-link" href="#contacto">Contacto</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle user-menu-toggle d-flex align-items-center gap-2" 
+                       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                       title="Opciones de usuario">
+                        <i class="bi bi-person-circle fs-5" style="color: #fff;"></i>
+                        <span class="user-menu-text d-none d-lg-flex flex-column">
+                            <span class="user-menu-username fw-bold" style="font-size: 0.9rem;">{{ current_user.username }}</span>
+                            <span class="user-menu-fullname small text-white-50" style="font-size: 0.8rem;">{{ nombre_completo }}</span>
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" style="min-width: 250px;">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{{ url_for('cuenta.perfil') }}">
+                                <i class="bi bi-person"></i> Ver mi perfil
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{{ url_for('cuenta.editar') }}">
+                                <i class="bi bi-pencil"></i> Editar perfil
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                            </a>
+                        </li>
+                    </ul>
                 </li>
+                {% else %}
 
+                <!-- Public Menu -->
                 <li class="nav-item">
-                    <a href="{{ url_for('auth.login') }}" class="nav-link">
-                        Iniciar sesión
+                    <a class="nav-link d-flex align-items-center gap-1 transition-all hover-link" 
+                       href="{{ url_for('tienda.index') }}"
+                       title="Ir al inicio">
+                        <i class="bi bi-house"></i>
+                        <span class="d-none d-md-inline">Inicio</span>
                     </a>
                 </li>
+
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 transition-all hover-link" 
+                       href="{{ url_for('tienda.menu') }}"
+                       title="Ver menú">
+                        <i class="bi bi-book"></i>
+                        <span class="d-none d-md-inline">Menú</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 transition-all hover-link" 
+                       href="{{ url_for('tienda.index') }}#calificaciones"
+                       title="Nuestra ubicación">
+                        <i class="bi bi-star-fill"></i>
+                        <span class="d-none d-md-inline">Calificaciones</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 transition-all hover-link" 
+                       href="{{ url_for('tienda.index') }}#nosotros"
+                       title="Conocer más sobre nosotros">
+                        <i class="bi bi-info-circle"></i>
+                        <span class="d-none d-md-inline">Nosotros</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 transition-all hover-link" 
+                       href="{{ url_for('tienda.index') }}#contacto"
+                       title="Contacto">
+                        <i class="bi bi-envelope"></i>
+                        <span class="d-none d-md-inline">Contacto</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="{{ url_for('auth.login') }}" 
+                       class="nav-link btn btn-sm btn-outline-light ms-2 d-flex align-items-center gap-1"
+                       title="Iniciar sesión">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span>Iniciar sesión</span>
+                    </a>
+                </li>
+                {% endif %}
             </ul>
-            </div>
-        {% endif %}
+        </div>
     </div>
 </nav>
 
-{% if current_user.is_authenticated %}
+<style>
+    .hover-link {
+        transition: all 0.3s ease;
+    }
+    .hover-link:hover {
+        color: #fff !important;
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 991.98px) {
+        #navbarMenu {
+            margin-top: 0.6rem;
+            margin-left: auto;
+            width: min(86vw, 290px);
+            background: rgba(20, 31, 44, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            padding: 0.4rem 0.55rem;
+            box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+            transform-origin: top right;
+        }
+
+        #navbarMenu.show {
+            animation: mobileMenuOpen 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        #navbarMenu.collapsing {
+            transition: height 0.2s ease;
+            overflow: hidden;
+        }
+
+        @keyframes mobileMenuOpen {
+            from {
+                opacity: 0;
+                transform: translateY(-8px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        #navbarMenu .navbar-nav {
+            margin-left: 0 !important;
+            align-items: stretch !important;
+            gap: 0.15rem !important;
+        }
+
+        #navbarMenu .nav-item {
+            width: 100%;
+        }
+
+        #navbarMenu .nav-link {
+            justify-content: center;
+            text-align: center;
+            font-size: 0.9rem;
+            padding: 0.45rem 0.55rem;
+            border-radius: 8px;
+        }
+
+        #navbarMenu .nav-link .d-none.d-md-inline {
+            display: inline !important;
+        }
+
+        #navbarMenu .btn,
+        #navbarMenu .btn-outline-light,
+        #navbarMenu .btn-sm {
+            width: 100%;
+            font-size: 0.85rem;
+            padding: 0.45rem 0.55rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        #navbarMenu.show {
+            animation: none;
+        }
+    }
+</style>
+
+ {% if current_user.is_authenticated or mostrar_turno_caja %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const alertsBellButton = document.getElementById('alertsBellButton');
         const alertsDropdown = document.getElementById('alertsDropdown');
         const alertsCountBadge = document.getElementById('alertsCountBadge');
+        const clearAlertsAction = document.getElementById('clearAlertsAction');
 
         if (!alertsBellButton || !alertsDropdown) {
             return;
         }
 
-        alertsDropdown.addEventListener('shown.bs.dropdown', () => {
-            fetch("{{ url_for('alertas.marcar_vistas') }}", { method: 'GET' })
-                .then(() => {
-                    if (alertsCountBadge) {
+        if (alertsBellButton) {
+            alertsBellButton.addEventListener('click', () => {
+                if (alertsCountBadge) {
+                    alertsCountBadge.remove();
+                }
+            });
+        }
+
+        if (clearAlertsAction && alertsDropdown) {
+            clearAlertsAction.addEventListener('click', (event) => {
+                event.preventDefault();
+                fetch("{{ url_for('alertas.limpiar') }}", { method: 'GET' })
+                    .then(() => {
+                        localStorage.removeItem('alerts_hidden_keys');
+                        if (alertsCountBadge) {
+                            alertsCountBadge.remove();
+                        }
+
+                        const menu = alertsDropdown.querySelector('.dropdown-menu');
+                        if (menu) {
+                            menu.innerHTML = '<li><span class="dropdown-item-text text-success">Sin alertas activas.</span></li>';
+                        }
+                    })
+                    .catch(() => {});
+            });
+        }
+
+        const menu = alertsDropdown.querySelector('.dropdown-menu');
+        if (menu) {
+            const hiddenKeys = new Set(JSON.parse(localStorage.getItem('alerts_hidden_keys') || '[]'));
+
+            function buildAlertKey(link) {
+                if (!link) {
+                    return '';
+                }
+                const href = link.getAttribute('href') || '';
+                const text = (link.textContent || '').replace(/\s+/g, ' ').trim();
+                return `${href}|${text}`;
+            }
+
+            function persistHiddenKeys() {
+                localStorage.setItem('alerts_hidden_keys', JSON.stringify(Array.from(hiddenKeys)));
+            }
+
+            function updateBadgeFromVisibleAlerts() {
+                const visibleItems = menu.querySelectorAll('a.dropdown-item[data-alert-row="1"]').length;
+                if (alertsCountBadge) {
+                    if (visibleItems > 0) {
+                        alertsCountBadge.textContent = visibleItems;
+                    } else {
                         alertsCountBadge.remove();
                     }
-                })
-                .catch(() => {});
-        });
+                }
+            }
+
+            menu.querySelectorAll('a.dropdown-item').forEach((link) => {
+                if (link.id === 'clearAlertsAction' || link.classList.contains('text-center') || !link.getAttribute('href')) {
+                    return;
+                }
+
+                link.dataset.alertRow = '1';
+                const key = buildAlertKey(link);
+                if (!key) {
+                    return;
+                }
+
+                if (hiddenKeys.has(key)) {
+                    const li = link.closest('li');
+                    if (li) {
+                        li.remove();
+                    }
+                    return;
+                }
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-sm btn-outline-danger ms-2 py-0 px-1';
+                removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+                removeBtn.title = 'Eliminar notificación';
+
+                removeBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    hiddenKeys.add(key);
+                    persistHiddenKeys();
+                    const li = link.closest('li');
+                    if (li) {
+                        li.remove();
+                    }
+                    updateBadgeFromVisibleAlerts();
+                });
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'd-flex align-items-start justify-content-between gap-2';
+                const parent = link.parentNode;
+                if (parent) {
+                    parent.insertBefore(wrapper, link);
+                    wrapper.appendChild(link);
+                    wrapper.appendChild(removeBtn);
+                }
+            });
+
+            updateBadgeFromVisibleAlerts();
+        }
+
+        const turnoBox = document.querySelector('.navbar-turno-chip');
+        const turnoText = document.getElementById('turnoRestanteTxt');
+        if (!turnoBox || !turnoText) {
+            return;
+        }
+
+        let remaining = Number(turnoBox.dataset.turnoRestante || 0);
+
+        function pad(n) {
+            return String(n).padStart(2, '0');
+        }
+
+        function renderRemaining() {
+            const safe = Math.max(0, remaining);
+            const h = Math.floor(safe / 3600);
+            const m = Math.floor((safe % 3600) / 60);
+            const s = safe % 60;
+            turnoText.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+        }
+
+        renderRemaining();
+        window.setInterval(() => {
+            if (remaining > 0) {
+                remaining -= 1;
+            }
+            renderRemaining();
+        }, 1000);
     });
 </script>
 {% endif %}
