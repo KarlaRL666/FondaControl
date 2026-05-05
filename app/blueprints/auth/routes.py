@@ -1,5 +1,6 @@
 """Auth blueprint routes – login, logout, user management."""
 import logging
+from urllib.parse import urlparse, urljoin
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from ...extensions import db
@@ -7,6 +8,16 @@ from ...models.user import User
 from . import auth_bp
 
 logger = logging.getLogger(__name__)
+
+
+def _is_safe_url(target: str) -> bool:
+    """Return True if the redirect target stays on the same host."""
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return (
+        test_url.scheme in ("http", "https")
+        and ref_url.netloc == test_url.netloc
+    )
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -28,8 +39,7 @@ def login():
             login_user(user, remember=remember)
             logger.info("User %s logged in", username)
             next_page = request.args.get("next", "")
-            # Validate next_page to prevent open redirect attacks
-            if next_page and (next_page.startswith("/") and not next_page.startswith("//")):
+            if next_page and _is_safe_url(next_page):
                 return redirect(next_page)
             return redirect(url_for("dashboard.index"))
 
