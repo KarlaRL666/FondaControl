@@ -27,8 +27,11 @@ def login():
         if user and user.check_password(password):
             login_user(user, remember=remember)
             logger.info("User %s logged in", username)
-            next_page = request.args.get("next")
-            return redirect(next_page or url_for("dashboard.index"))
+            next_page = request.args.get("next", "")
+            # Validate next_page to prevent open redirect attacks
+            if next_page and (next_page.startswith("/") and not next_page.startswith("//")):
+                return redirect(next_page)
+            return redirect(url_for("dashboard.index"))
 
         flash("Credenciales incorrectas. Intenta de nuevo.", "danger")
         logger.warning("Failed login attempt for username: %s", username)
