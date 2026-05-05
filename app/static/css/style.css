@@ -1,0 +1,117 @@
+/* =====================================================
+   FondaControl – Custom Styles
+   ===================================================== */
+
+:root {
+  --fc-orange: #e67e22;
+  --fc-orange-light: #f39c12;
+  --fc-dark: #1a1a2e;
+  --fc-sidebar-width: 240px;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #f8f9fa;
+}
+
+#wrapper {
+  min-height: 100vh;
+}
+
+#sidebar {
+  width: var(--fc-sidebar-width);
+  min-height: 100vh;
+  background: #1a1a2e !important;
+  transition: width .25s ease;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+#sidebar.collapsed {
+  width: 60px;
+}
+
+#sidebar.collapsed .nav-link span,
+#sidebar.collapsed .navbar-brand span,
+#sidebar.collapsed .text-muted.small {
+  display: none;
+}
+
+#page-content {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Topbar ──────────────────────────────────────────── */
+.topbar {
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* ── Navigation links ────────────────────────────────── */
+#sidebar .nav-link {
+  padding: .5rem .75rem;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+
+#sidebar .nav-link:hover {
+  background: rgba(255,255,255,.08);
+}
+
+#sidebar .nav-link.active {
+  background: var(--fc-orange) !important;
+  color: #fff !important;
+}
+
+/* ── Cards ───────────────────────────────────────────── */
+.card {
+  border-radius: .75rem;
+}
+
+.card-header {
+  border-radius: .75rem .75rem 0 0 !important;
+}
+
+/* ── POS product cards ───────────────────────────────── */
+.product-card {
+  transition: transform .15s, box-shadow .15s;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.12) !important;
+}
+
+/* ── Badges ──────────────────────────────────────────── */
+.badge { font-weight: 500; }
+
+/* ── Ticket print ────────────────────────────────────── */
+@media print {
+  #sidebar, .topbar, footer { display: none !important; }
+  #page-content { margin: 0 !important; }
+}
+
+/* ── Charts container ────────────────────────────────── */
+canvas { max-height: 350px; }
+
+/* ── Responsive sidebar ──────────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar {
+    position: fixed;
+    z-index: 200;
+    left: -240px;
+    transition: left .25s;
+  }
+  #sidebar.open {
+    left: 0;
+  }
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ticket – {{ sale.folio }}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Courier New', monospace; font-size:12px; max-width:300px; margin:0 auto; padding:10px; }
+    .center { text-align:center; }
+    .divider { border-top:1px dashed #000; margin:6px 0; }
+    .row { display:flex; justify-content:space-between; }
+    .total { font-size:16px; font-weight:bold; }
+    @media print { button { display:none !important; } }
+  </style>
+</head>
+<body>
+  <div class="center">
+    <strong>FondaControl</strong><br/>
+    Sistema POS
+  </div>
+  <div class="divider"></div>
+  <div><strong>Folio:</strong> {{ sale.folio }}</div>
+  <div><strong>Fecha:</strong> {{ sale.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+  <div><strong>Cajero:</strong> {{ sale.cashier.username if sale.cashier else '—' }}</div>
+  {% if sale.table_number %}<div><strong>Mesa:</strong> {{ sale.table_number }}</div>{% endif %}
+  <div class="divider"></div>
+
+  {% for item in sale.items %}
+  <div class="row">
+    <span>{{ item.product.name }}</span>
+    <span>${{ "%.2f" | format(item.subtotal | float) }}</span>
+  </div>
+  <div style="padding-left:10px; color:#555;">{{ item.quantity }} × ${{ "%.2f" | format(item.unit_price | float) }}</div>
+  {% endfor %}
+
+  <div class="divider"></div>
+  <div class="row">
+    <span>Subtotal</span>
+    <span>${{ "%.2f" | format(sale.subtotal | float) }}</span>
+  </div>
+  <div class="row total">
+    <span>TOTAL</span>
+    <span>${{ "%.2f" | format(sale.total | float) }}</span>
+  </div>
+  {% if sale.payment_method == 'efectivo' %}
+  <div class="divider"></div>
+  <div class="row">
+    <span>Efectivo recibido</span>
+    <span>${{ "%.2f" | format(sale.amount_paid | float) }}</span>
+  </div>
+  <div class="row">
+    <span>Cambio</span>
+    <span>${{ "%.2f" | format(sale.change_given | float) }}</span>
+  </div>
+  {% endif %}
+
+  <div class="divider"></div>
+  <div class="center">¡Gracias por su visita!</div>
+  <br/>
+  <button onclick="window.print()" style="width:100%;padding:8px;cursor:pointer;">🖨 Imprimir</button>
+  <script>window.print();</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-box-seam me-2 text-warning"></i>Inventario de Insumos</h2>
+  <a href="{{ url_for('inventory.create_item') }}" class="btn btn-warning">
+    <i class="bi bi-plus-circle me-1"></i>Nuevo Insumo
+  </a>
+</div>
+
+<!-- Alerts -->
+{% if low_stock %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  <strong>Stock bajo:</strong>
+  {% for item in low_stock %}<span class="badge bg-warning text-dark me-1">{{ item.name }}</span>{% endfor %}
+</div>
+{% endif %}
+{% if expiring %}
+<div class="alert alert-danger">
+  <i class="bi bi-calendar-x me-2"></i>
+  <strong>Próximos a caducar:</strong>
+  {% for item in expiring %}<span class="badge bg-danger me-1">{{ item.name }}</span>{% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body">
+        <div class="text-muted small">Total Insumos</div>
+        <div class="fs-3 fw-bold">{{ items | length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body">
+        <div class="text-muted small">Stock Bajo</div>
+        <div class="fs-3 fw-bold text-warning">{{ low_stock | length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body">
+        <div class="text-muted small">Por Caducar</div>
+        <div class="fs-3 fw-bold text-danger">{{ expiring | length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body">
+        <div class="text-muted small">Movimientos</div>
+        <a href="{{ url_for('inventory.movements') }}" class="fs-5 fw-bold text-primary text-decoration-none">
+          Ver →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white d-flex align-items-center justify-content-between">
+    <span class="fw-semibold">Insumos</span>
+    <input type="text" id="searchItem" class="form-control form-control-sm w-auto" placeholder="🔍 Buscar..." />
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0" id="itemsTable">
+      <thead class="table-dark">
+        <tr>
+          <th>Nombre</th>
+          <th>Stock</th>
+          <th>Unidad</th>
+          <th>Costo Unitario</th>
+          <th>Stock Mínimo</th>
+          <th>Caducidad</th>
+          <th>Proveedor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr class="{% if item.is_low_stock %}table-warning{% elif item.is_expiring_soon %}table-danger{% endif %}">
+          <td class="fw-semibold">{{ item.name }}</td>
+          <td>
+            {{ item.stock }}
+            {% if item.is_low_stock %}<i class="bi bi-exclamation-triangle text-warning ms-1" title="Stock bajo"></i>{% endif %}
+          </td>
+          <td><span class="badge bg-secondary">{{ item.unit }}</span></td>
+          <td>${{ "%.4f" | format(item.unit_cost | float) }}</td>
+          <td>{{ item.min_stock }}</td>
+          <td>
+            {% if item.expiry_date %}
+              <span class="{% if item.is_expiring_soon %}text-danger fw-bold{% endif %}">
+                {{ item.expiry_date.strftime('%d/%m/%Y') }}
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td>{{ item.supplier or '—' }}</td>
+          <td>
+            <a href="{{ url_for('inventory.edit_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil"></i>
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-3">Sin insumos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('searchItem').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Receta – {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0">
+    <i class="bi bi-journal-text me-2 text-warning"></i>Receta: {{ product.name }}
+  </h2>
+  <a href="{{ url_for('inventory.recipes') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Recetas
+  </a>
+</div>
+
+<div class="card shadow-sm" style="max-width:700px;">
+  <div class="card-body p-4">
+    <form method="POST" action="{{ url_for('inventory.recipe_detail', product_id=product.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="row g-3 mb-4">
+        <div class="col-md-8">
+          <label class="form-label">Instrucciones / preparación</label>
+          <textarea name="instructions" class="form-control" rows="3">{{ recipe.instructions if recipe else '' }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Número de porciones</label>
+          <input type="number" name="portions" class="form-control" min="1"
+                 value="{{ recipe.portions if recipe else 1 }}" />
+        </div>
+      </div>
+
+      <h6 class="fw-semibold mb-3">Ingredientes</h6>
+      <div id="ingredients-container">
+        {% if recipe %}
+          {% for ri in recipe.ingredients %}
+          <div class="row g-2 mb-2 ingredient-row">
+            <div class="col-5">
+              <select name="ingredient_item_id" class="form-select form-select-sm">
+                <option value="">-- Insumo --</option>
+                {% for item in items %}
+                <option value="{{ item.id }}" {% if item.id == ri.inventory_item_id %}selected{% endif %}>
+                  {{ item.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-3">
+              <input type="number" name="ingredient_quantity" class="form-control form-control-sm"
+                     min="0.001" step="0.001" value="{{ ri.quantity }}" placeholder="Cantidad" />
+            </div>
+            <div class="col-3">
+              <input type="text" name="ingredient_unit" class="form-control form-control-sm"
+                     value="{{ ri.unit or '' }}" placeholder="Unidad" />
+            </div>
+            <div class="col-1">
+              <button type="button" class="btn btn-sm btn-outline-danger remove-row">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <button type="button" class="btn btn-sm btn-outline-success mt-2 mb-4" id="addIngredient">
+        <i class="bi bi-plus-circle me-1"></i>Agregar Ingrediente
+      </button>
+
+      <!-- Ingredient row template (hidden) -->
+      <template id="ingredientTemplate">
+        <div class="row g-2 mb-2 ingredient-row">
+          <div class="col-5">
+            <select name="ingredient_item_id" class="form-select form-select-sm">
+              <option value="">-- Insumo --</option>
+              {% for item in items %}
+              <option value="{{ item.id }}">{{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-3">
+            <input type="number" name="ingredient_quantity" class="form-control form-control-sm"
+                   min="0.001" step="0.001" placeholder="Cantidad" />
+          </div>
+          <div class="col-3">
+            <input type="text" name="ingredient_unit" class="form-control form-control-sm"
+                   placeholder="Unidad" />
+          </div>
+          <div class="col-1">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <button type="submit" class="btn btn-warning fw-bold w-100">
+        <i class="bi bi-check-circle me-1"></i>Guardar Receta
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('addIngredient').addEventListener('click', () => {
+  const template = document.getElementById('ingredientTemplate');
+  const clone = template.content.cloneNode(true);
+  document.getElementById('ingredients-container').appendChild(clone);
+});
+
+document.getElementById('ingredients-container').addEventListener('click', (e) => {
+  if (e.target.closest('.remove-row')) {
+    e.target.closest('.ingredient-row').remove();
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Punto de Venta{% endblock %}
+
+{% block extra_css %}
+<style>
+  .product-card { cursor:pointer; transition:.15s; user-select:none; }
+  .product-card:hover { transform:translateY(-3px); box-shadow:0 4px 16px rgba(0,0,0,.12); }
+  .product-card:active { transform:scale(.97); }
+  #cart-panel { min-height:300px; }
+  .qty-badge { font-size:.75rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="fw-bold mb-0"><i class="bi bi-cash-register me-2 text-warning"></i>Punto de Venta</h2>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('pos.cash_close') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-wallet2 me-1"></i>Cierre de Caja
+    </a>
+    <a href="{{ url_for('pos.history') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-clock-history me-1"></i>Historial
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- ── Products Panel ── -->
+  <div class="col-lg-7">
+    <!-- Category filter -->
+    <div class="d-flex gap-2 flex-wrap mb-3">
+      <button class="btn btn-warning btn-sm cat-filter active" data-cat="all">Todos</button>
+      {% for cat in categories %}
+      <button class="btn btn-outline-warning btn-sm cat-filter" data-cat="{{ cat.id }}">
+        {{ cat.name }}
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- Products grid -->
+    <div class="row g-2" id="products-grid">
+      {% for product in products %}
+      <div class="col-6 col-md-4 product-item" data-cat="{{ product.category_id or 'none' }}">
+        <div class="card product-card h-100 border-0 shadow-sm"
+             onclick="addToCart({{ product.id }}, {{ product.price }}, '{{ product.name | e }}')">
+          <div class="card-body text-center p-2">
+            {% if product.image_url %}
+              <img src="{{ product.image_url }}" class="rounded mb-2" style="height:60px;object-fit:cover;" alt="{{ product.name }}"/>
+            {% else %}
+              <div class="bg-warning bg-opacity-25 rounded mb-2 d-flex align-items-center justify-content-center" style="height:60px;">
+                <i class="bi bi-egg-fried fs-3 text-warning"></i>
+              </div>
+            {% endif %}
+            <div class="fw-semibold small">{{ product.name }}</div>
+            <div class="text-success fw-bold">${{ "%.2f" | format(product.price | float) }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── Cart Panel ── -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm sticky-top" style="top:80px;">
+      <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-cart3 me-2"></i>Pedido</span>
+        <div class="d-flex gap-2 align-items-center">
+          <input type="text" id="tableInput" class="form-control form-control-sm bg-dark text-white border-secondary"
+                 style="width:100px;" placeholder="Mesa #" />
+          <button class="btn btn-sm btn-outline-warning" onclick="newSale()">
+            <i class="bi bi-plus"></i> Nuevo
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-0" id="cart-panel">
+        <ul class="list-group list-group-flush" id="cart-items">
+          <li class="list-group-item text-center text-muted py-5" id="empty-cart-msg">
+            <i class="bi bi-cart-x fs-1 d-block mb-2"></i>Agrega platillos al pedido
+          </li>
+        </ul>
+      </div>
+      <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Subtotal</span>
+          <span id="cart-subtotal">$0.00</span>
+        </div>
+        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+          <span>Total</span>
+          <span id="cart-total" class="text-success">$0.00</span>
+        </div>
+        <div class="d-grid gap-2">
+          <button class="btn btn-success" onclick="openPaymentModal()" id="btnPay" disabled>
+            <i class="bi bi-cash-coin me-2"></i>Cobrar
+          </button>
+          <button class="btn btn-outline-danger btn-sm" onclick="cancelSale()" id="btnCancel" disabled>
+            <i class="bi bi-x-circle me-1"></i>Cancelar Venta
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Payment Modal ── -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Procesar Pago</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <div class="fs-1 fw-bold text-success" id="modal-total">$0.00</div>
+          <div class="text-muted">Total a cobrar</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Método de pago</label>
+          <div class="d-flex gap-3">
+            <div class="form-check flex-fill">
+              <input class="form-check-input" type="radio" name="payMethod" id="pmCash" value="efectivo" checked />
+              <label class="form-check-label" for="pmCash"><i class="bi bi-cash me-1"></i>Efectivo</label>
+            </div>
+            <div class="form-check flex-fill">
+              <input class="form-check-input" type="radio" name="payMethod" id="pmCard" value="tarjeta" />
+              <label class="form-check-label" for="pmCard"><i class="bi bi-credit-card me-1"></i>Tarjeta</label>
+            </div>
+          </div>
+        </div>
+        <div class="mb-3" id="cashInputGroup">
+          <label class="form-label">Pago recibido ($)</label>
+          <input type="number" class="form-control form-control-lg" id="amountPaid"
+                 min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="alert alert-info d-none" id="changeAlert">
+          Cambio: <strong id="changeAmount">$0.00</strong>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success fw-bold" onclick="processPay()">
+          <i class="bi bi-check-circle me-1"></i>Confirmar Pago
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── State ──────────────────────────────────────────────
+let currentSaleId = null;
+let cartItems = [];     // { id, productId, name, qty, unitPrice }
+let cartTotal = 0;
+
+// ── Category filter ────────────────────────────────────
+document.querySelectorAll('.cat-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cat-filter').forEach(b => b.classList.remove('active','btn-warning'));
+    document.querySelectorAll('.cat-filter').forEach(b => b.classList.add('btn-outline-warning'));
+    btn.classList.add('active','btn-warning');
+    btn.classList.remove('btn-outline-warning');
+
+    const cat = btn.dataset.cat;
+    document.querySelectorAll('.product-item').forEach(item => {
+      item.style.display = (cat === 'all' || item.dataset.cat == cat) ? '' : 'none';
+    });
+  });
+});
+
+// ── New Sale ────────────────────────────────────────────
+async function newSale() {
+  const tableNumber = document.getElementById('tableInput').value.trim();
+  const res = await fetch('/pos/ventas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+    body: JSON.stringify({ table_number: tableNumber })
+  });
+  const data = await res.json();
+  currentSaleId = data.id;
+  cartItems = [];
+  renderCart();
+  showToast(`Pedido ${data.folio} creado`, 'success');
+}
+
+// ── Add to cart ─────────────────────────────────────────
+async function addToCart(productId, price, name) {
+  if (!currentSaleId) await newSale();
+
+  const res = await fetch(`/pos/ventas/${currentSaleId}/items`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+    body: JSON.stringify({ product_id: productId, quantity: 1 })
+  });
+  const data = await res.json();
+  cartTotal = data.total;
+
+  // Update local cart
+  const existing = cartItems.find(i => i.productId === productId);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cartItems.push({ productId, name, qty: 1, unitPrice: price });
+  }
+  renderCart();
+}
+
+// ── Remove item ─────────────────────────────────────────
+async function removeItem(saleItemId, productId) {
+  await fetch(`/pos/ventas/${currentSaleId}/items/${saleItemId}`, {
+    method: 'DELETE',
+    headers: { 'X-CSRFToken': getCsrf() }
+  });
+  cartItems = cartItems.filter(i => i.productId !== productId);
+  const saleData = await (await fetch(`/pos/ventas/${currentSaleId}`)).json();
+  cartTotal = saleData.total;
+  renderCart();
+}
+
+// ── Render cart ─────────────────────────────────────────
+function renderCart() {
+  const ul = document.getElementById('cart-items');
+  const emptyMsg = document.getElementById('empty-cart-msg');
+  const btnPay = document.getElementById('btnPay');
+  const btnCancel = document.getElementById('btnCancel');
+
+  if (!currentSaleId || cartItems.length === 0) {
+    ul.innerHTML = '<li class="list-group-item text-center text-muted py-5" id="empty-cart-msg"><i class="bi bi-cart-x fs-1 d-block mb-2"></i>Agrega platillos al pedido</li>';
+    btnPay.disabled = true;
+    btnCancel.disabled = true;
+    document.getElementById('cart-total').textContent = '$0.00';
+    document.getElementById('cart-subtotal').textContent = '$0.00';
+    return;
+  }
+
+  ul.innerHTML = cartItems.map(item => `
+    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+      <div>
+        <span class="fw-semibold">${item.name}</span>
+        <span class="badge bg-warning text-dark ms-2 qty-badge">×${item.qty}</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-success fw-bold small">$${(item.qty * item.unitPrice).toFixed(2)}</span>
+      </div>
+    </li>`).join('');
+
+  const sub = cartItems.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+  document.getElementById('cart-subtotal').textContent = `$${sub.toFixed(2)}`;
+  document.getElementById('cart-total').textContent = `$${cartTotal.toFixed(2)}`;
+  btnPay.disabled = false;
+  btnCancel.disabled = false;
+}
+
+// ── Payment modal ────────────────────────────────────────
+const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+function openPaymentModal() {
+  document.getElementById('modal-total').textContent = `$${cartTotal.toFixed(2)}`;
+  document.getElementById('amountPaid').value = cartTotal.toFixed(2);
+  document.getElementById('changeAlert').classList.add('d-none');
+  paymentModal.show();
+}
+
+document.getElementById('amountPaid').addEventListener('input', function () {
+  const paid = parseFloat(this.value) || 0;
+  const change = paid - cartTotal;
+  if (change >= 0) {
+    document.getElementById('changeAmount').textContent = `$${change.toFixed(2)}`;
+    document.getElementById('changeAlert').classList.remove('d-none');
+  } else {
+    document.getElementById('changeAlert').classList.add('d-none');
+  }
+});
+
+document.querySelectorAll('input[name="payMethod"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('cashInputGroup').style.display =
+      r.value === 'efectivo' ? '' : 'none';
+  });
+});
+
+async function processPay() {
+  const method = document.querySelector('input[name="payMethod"]:checked').value;
+  const paid = parseFloat(document.getElementById('amountPaid').value) || cartTotal;
+  if (method === 'efectivo' && paid < cartTotal) {
+    alert('El pago recibido es insuficiente.');
+    return;
+  }
+  const res = await fetch(`/pos/ventas/${currentSaleId}/pagar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+    body: JSON.stringify({ payment_method: method, amount_paid: paid })
+  });
+  const data = await res.json();
+  paymentModal.hide();
+  showToast(`Pago registrado. Cambio: $${data.change.toFixed(2)}`, 'success');
+  window.open(`/pos/ventas/${currentSaleId}/ticket`, '_blank');
+  currentSaleId = null;
+  cartItems = [];
+  cartTotal = 0;
+  renderCart();
+}
+
+// ── Cancel sale ──────────────────────────────────────────
+async function cancelSale() {
+  if (!confirm('¿Cancelar esta venta?')) return;
+  await fetch(`/pos/ventas/${currentSaleId}/cancelar`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrf() }
+  });
+  currentSaleId = null;
+  cartItems = [];
+  cartTotal = 0;
+  renderCart();
+  showToast('Venta cancelada', 'warning');
+}
+
+function getCsrf() {
+  return document.querySelector('meta[name="csrf-token"]')?.content
+    || document.querySelector('[name="csrf_token"]')?.value || '';
+}
+
+function showToast(msg, type = 'info') {
+  const div = document.createElement('div');
+  div.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3 shadow`;
+  div.style.zIndex = 9999;
+  div.textContent = msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Categorías{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-tags me-2 text-warning"></i>Categorías</h2>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold bg-white">Nueva Categoría</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('inventory.create_category') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="mb-3">
+            <label class="form-label">Nombre *</label>
+            <input type="text" name="name" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <input type="text" name="description" class="form-control" />
+          </div>
+          <button type="submit" class="btn btn-warning fw-bold w-100">
+            <i class="bi bi-plus-circle me-1"></i>Crear
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold bg-white">Categorías existentes</div>
+      <ul class="list-group list-group-flush">
+        {% for cat in categories %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <span class="fw-semibold">{{ cat.name }}</span>
+            {% if cat.description %}<span class="text-muted small ms-2">{{ cat.description }}</span>{% endif %}
+          </div>
+          <span class="badge bg-secondary">{{ cat.products.count() }} platillos</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-center text-muted">Sin categorías.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

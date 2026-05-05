@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Analítica{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-bar-chart-line me-2 text-warning"></i>Analítica</h2>
+  <div class="d-flex gap-2">
+    <div class="btn-group btn-group-sm">
+      <button class="btn btn-warning period-btn active" data-period="week">Semana</button>
+      <button class="btn btn-outline-secondary period-btn" data-period="month">Mes</button>
+    </div>
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="bi bi-download me-1"></i>Exportar
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="/dashboard/reporte/pdf?period=week">
+          <i class="bi bi-file-pdf text-danger me-2"></i>PDF (semana)
+        </a></li>
+        <li><a class="dropdown-item" href="/dashboard/reporte/excel?period=month">
+          <i class="bi bi-file-excel text-success me-2"></i>Excel (mes)
+        </a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Daily sales -->
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold">Ventas por día</div>
+      <div class="card-body"><canvas id="dailySalesChart" height="100"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top products -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold">Platillos más vendidos</div>
+      <div class="card-body"><canvas id="topProductsChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Profitability -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold">Análisis de Rentabilidad</div>
+      <div class="card-body"><canvas id="profitabilityChart" height="80"></canvas></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let charts = {};
+
+function destroyAll() {
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+}
+
+async function loadCharts(period) {
+  destroyAll();
+
+  const [salesRes, topRes, profitRes] = await Promise.all([
+    fetch(`/dashboard/api/ventas?period=${period}`),
+    fetch(`/dashboard/api/platillos-mas-vendidos?period=${period}`),
+    fetch(`/dashboard/api/rentabilidad?period=${period}`),
+  ]);
+  const sales = await salesRes.json();
+  const top = await topRes.json();
+  const profit = await profitRes.json();
+
+  // Daily sales bar
+  charts.daily = new Chart(document.getElementById('dailySalesChart'), {
+    type: 'line',
+    data: {
+      labels: sales.labels,
+      datasets: [{
+        label: 'Ventas ($)',
+        data: sales.totals,
+        borderColor: '#e67e22',
+        backgroundColor: 'rgba(230,126,34,.15)',
+        fill: true,
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4,
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+               scales: { y: { beginAtZero: true } } }
+  });
+
+  // Top products doughnut
+  charts.top = new Chart(document.getElementById('topProductsChart'), {
+    type: 'doughnut',
+    data: {
+      labels: top.labels,
+      datasets: [{ data: top.quantities, backgroundColor: [
+        '#e67e22','#3498db','#2ecc71','#e74c3c','#9b59b6',
+        '#1abc9c','#f39c12','#d35400','#c0392b','#2980b9'
+      ]}]
+    },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // Profitability grouped bar
+  charts.profit = new Chart(document.getElementById('profitabilityChart'), {
+    type: 'bar',
+    data: {
+      labels: profit.labels,
+      datasets: [
+        { label: 'Ingresos ($)', data: profit.revenue, backgroundColor: 'rgba(46,204,113,.7)', borderRadius: 3 },
+        { label: 'Costo ($)', data: profit.cost, backgroundColor: 'rgba(231,76,60,.6)', borderRadius: 3 },
+      ]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  });
+}
+
+loadCharts('week');
+
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.period-btn').forEach(b => {
+      b.classList.remove('active','btn-warning');
+      b.classList.add('btn-outline-secondary');
+    });
+    btn.classList.add('active','btn-warning');
+    btn.classList.remove('btn-outline-secondary');
+    loadCharts(btn.dataset.period);
+  });
+});
+</script>
+{% endblock %}

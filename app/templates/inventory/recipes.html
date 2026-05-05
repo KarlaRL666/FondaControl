@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Recetas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-warning"></i>Recetas y Costos</h2>
+  <a href="{{ url_for('inventory.products') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-egg-fried me-1"></i>Platillos
+  </a>
+</div>
+
+<div class="row g-3">
+  {% for recipe in recipes %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        {{ recipe.product.name }}
+        <span class="badge bg-secondary float-end">{{ recipe.portions }} porción(es)</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <span class="text-muted small">Ingredientes:</span>
+          <ul class="list-unstyled mb-0 mt-1">
+            {% for ri in recipe.ingredients %}
+            <li class="small"><i class="bi bi-dot"></i>{{ ri.inventory_item.name }} – {{ ri.quantity }} {{ ri.unit or ri.inventory_item.unit }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="d-flex justify-content-between mt-3">
+          <div>
+            <div class="text-muted small">Costo teórico</div>
+            <div class="fw-bold">${{ "%.2f" | format(recipe.theoretical_cost) }}</div>
+          </div>
+          <div>
+            <div class="text-muted small">Precio venta</div>
+            <div class="fw-bold text-success">${{ "%.2f" | format(recipe.product.price | float) }}</div>
+          </div>
+          <div>
+            <div class="text-muted small">Margen</div>
+            <div class="fw-bold text-primary">{{ recipe.product.margin }}%</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer bg-white">
+        <a href="{{ url_for('inventory.recipe_detail', product_id=recipe.product_id) }}"
+           class="btn btn-sm btn-outline-warning w-100">
+          <i class="bi bi-pencil me-1"></i>Editar Receta
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12 text-center text-muted py-5">
+    <i class="bi bi-journal-text fs-1 d-block mb-2"></i>Sin recetas. Crea un platillo y asigna su receta.
+    <br/><a href="{{ url_for('inventory.products') }}" class="btn btn-warning mt-2">Ver Platillos</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
